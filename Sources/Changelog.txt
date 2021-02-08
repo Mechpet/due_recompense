@@ -1,0 +1,55 @@
+Music files progress:
+12/26/20 - Hayato_i created
+12/26/20 - Hayato_b created
+12/27/20 - Hayato_b_prelude created
+12/27/21 - Lille_i created
+01/03/21 - Dalia_i created
+01/07/21 - Dalia_b created
+01/09/21 - Chike_i created
+01/09/21 - Inigo_i created
+01/10/21 - Inigo_i finalized
+01/10/21 - Lachlan_b created
+01/13/21 - Faiza_i created
+01/13/21 - Lachlan_i created
+01/14/21 - Matilda_i created + finalized
+01/15/21 - Lille_b created + finalized
+01/15/21 - Matilda_b_prelude created + finalized
+01/15/21 - Matilda_b created + finalized
+01/16/21 - Cue_i created
+01/16/21 - Inigo_b created + finalized
+01/17/21 - Lexa_i created
+01/18/21 - Severino_i created + finalized
+01/18/21 - Severino_b created
+01/19/21 - Chike_b created
+01/19/21 - Dalia_i finalized
+01/19/21 - Lille_i finalized
+01/19/21 - Severino_b finalized
+01/20/21 - Cue_b created
+01/20/21 - Faiza_i finalized
+01/21/21 - Faiza_b created
+01/21/21 - Lachlan_i finalized
+01/22/21 - Nemo_i created
+01/22/21 - Nemo_b created + finalized
+01/23/21 - Lucinda_i created + finalized
+01/23/21 - Lucinda_b created
+01/24/21 - Chike_i finalized
+01/24/21 - Chike_b finalized
+01/24/21 - Hayato_i overhaul
+01/24/21 - Hayato_b finalized
+01/26/21 - Lexa_b created
+01/28/21 - Grischa_b created
+01/28/21 - Lachlan_b finalized
+01/28/21 - Nemo_i finalized
+01/30/21 - Grischa_i created
+01/31/21 - Cue_i finalized
+01/31/21 - Grischa_i finalized
+01/31/21 - Grischa_b finalized
+02/01/21 - Nicolau_i created + finalized
+02/04/21 - Nicolau_b created
+02/05/21 - Faiza_b finalized
+02/05/21 - Lexa_i finalized
+02/05/21 - Lexa_b finalized
+02/05/21 - Lucinda_b finalized
+02/06/21 - Cue_b finalized
+02/07/21 - Dalia_b finalized
+02/07/21 - Nicolau_b finalized

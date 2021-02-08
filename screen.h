@@ -32,7 +32,7 @@ void title_screen(void) {
             case Start:
                 Map1 = initialize_map(MAP1Y, MAX_COLUMNS);  // Make map of Map1 size.
                 Map1->player = initialize_player(); // Allocate memory for the player's Character.
-                Map1->player->health = 70;
+                //Map1->player->health = 70;
                 //Lobby = initialize_map(Lobby, LOBBY_Y, MAX_COLUMNS);
                 //Lobby->player = initialize_player();
                 first_item = NULL;

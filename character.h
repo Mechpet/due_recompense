@@ -15,7 +15,7 @@ Also implements the fundamentals of the battle system.
 #include <mmsystem.h>
 #pragma comment(lib, "Winmm.lib")
 
-#define INIT_HEALTH 90  // Default starting maximum health of player
+#define INIT_HEALTH 45  // Default starting maximum health of player
 #define INIT_ATTACK 2   // Default starting attack of player
 #define MAX_ENEMIES 3   // Maximum number of enemies in a map 
 #define INIT_KARMA 50   // Default starting karma of player
@@ -1408,7 +1408,7 @@ int intro(struct Character *enemy_ptr, struct Character *player_ptr) {
     char battle_file[28];
     sprintf(intro_file, "Music\\Wav Files\\%c\\%c_i.wav", symbol, symbol);
     sprintf(battle_file, "Music\\Wav Files\\%c\\%c_b.wav", symbol, symbol);
-    PlaySound(TEXT(intro_file), NULL, SND_ASYNC | SND_LOOP);
+    //PlaySound(TEXT(intro_file), NULL, SND_ASYNC | SND_LOOP);
     switch (symbol) {
         case 'c':
             enemy_ptr->ai = &KID_behavior;
@@ -1913,7 +1913,7 @@ int intro(struct Character *enemy_ptr, struct Character *player_ptr) {
                     PlaySound(TEXT("Music\\Wav Files\\+\\+_Battle_Prelude.wav"), NULL, SND_SYNC);
                     break;
             }
-            PlaySound(TEXT(battle_file), NULL, SND_ASYNC | SND_LOOP);
+            //PlaySound(TEXT(battle_file), NULL, SND_ASYNC | SND_LOOP);
             return FALSE;
         }
     }
