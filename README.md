@@ -24,8 +24,6 @@ Procedure:
   9. Extract the both SDL2\ folders to the MinGW\include\ folder. SDL_mixer.h should be in the SDL2\ folder after this.
   10. From the download links above, download the Runtime Binaries version that matches the MinGW version you extracted. For example, if you extracted from i686-w64-mingw32,     download the 32-bit version. 
   11. Extract all the .dll files from both archives to the directory that contains main.c.
-  12. Compile the program with the line 
-# gcc main.c -o Due_Recompense.exe -LC:\MinGW\include\lib -lSDL2 -lSDL2_Mixer -lmingw32
-
+  12. Compile the program with the line gcc main.c -o Due_Recompense.exe -LC:\MinGW\include\lib -lSDL2 -lSDL2_Mixer -lmingw32
 Note: C:\MinGW\include\lib should be replaced with the directory where libSDL2.a and libSDL2_mixer.a are located.
   13. Run the program by double clicking Due_Recompense.exe or typing Due_Recompense in the terminal from the directory.
