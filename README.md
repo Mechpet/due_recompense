@@ -6,10 +6,10 @@
 3. ASCII artworks for specific objects/entities (first time making ASCII art, so it may not be good)
 4. Dialogues and turn-based boss battles
 
-# How to compile 
+# How to compile:
 OS: Windows 10  
-MinGW gcc version: 9.2.0  
-Dependency: SDL2, SDL2_mixer  
+MinGW32 gcc version: 9.2.0  
+Libraries: SDL2, SDL2_mixer  
 Tools: 7-zip  
 
 Procedure:
@@ -27,3 +27,15 @@ Procedure:
   12. Compile the program with the line gcc main.c -o Due_Recompense.exe -LC:\MinGW\include\lib -lSDL2 -lSDL2_Mixer -lmingw32
 Note: C:\MinGW\include\lib should be replaced with the directory where libSDL2.a and libSDL2_mixer.a are located.
   13. Run the program by double clicking Due_Recompense.exe or typing Due_Recompense in the terminal from the directory.
+
+# Sources:
+Tools/Programs used for soundtrack:  
+OrgMaker2  
+org2xm  
+Audacity  
+https://www.coolutils.com/online/XM-to-WAV  
+
+Tools/Programs used for program:  
+Visual Studio Code  
+SDL2  
+SDL2_mixer  
