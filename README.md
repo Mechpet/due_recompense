@@ -27,5 +27,5 @@ Procedure:
   12. Compile the program with the line 
 # gcc main.c -o Due_Recompense.exe -LC:\MinGW\include\lib -lSDL2 -lSDL2_Mixer -lmingw32
 
-Note: -LC:\MinGW\include\lib is just the directory where libSDL2.a and libSDL2_mixer.a are located.
+Note: C:\MinGW\include\lib should be replaced with the directory where libSDL2.a and libSDL2_mixer.a are located. mingw32 
   13. Run the program by double clicking Due_Recompense.exe or typing Due_Recompense in the terminal from the directory.
