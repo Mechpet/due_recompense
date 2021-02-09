@@ -30,12 +30,12 @@ Note: C:\MinGW\include\lib should be replaced with the directory where libSDL2.a
 
 # Sources:
 Tools/Programs used for soundtrack:  
-OrgMaker2  
-org2xm  
-Audacity  
-https://www.coolutils.com/online/XM-to-WAV  
+  OrgMaker2  
+  org2xm  
+  Audacity  
+  https://www.coolutils.com/online/XM-to-WAV  
 
 Tools/Programs used for program:  
-Visual Studio Code  
-SDL2  
-SDL2_mixer  
+  Visual Studio Code  
+  SDL2  
+  SDL2_mixer  
