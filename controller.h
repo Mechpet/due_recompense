@@ -130,6 +130,7 @@ void quit(void) {
     "|______________________________________/\n"
     "                  \"FIN\"";
     puts(end_buffer);
+    sleep(5);
     exit(EXIT_SUCCESS);
 }
 
@@ -150,6 +151,5 @@ void player_death(void) {
     "________________|__\\|/__|________________\n"
     "             \"Here lies you\"";
     puts(die_buffer);
-    exit(EXIT_SUCCESS);
 }
 #endif /* ends ifndef CONTROLLER_H */

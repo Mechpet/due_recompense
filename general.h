@@ -8,7 +8,7 @@ Functions that provide use that can be attributed to uses of many headers/files.
 #ifndef GENERAL_H
 #define GENERAL_H
 
-#define WIDTH 150           // Width of the terminal.
+#define WIDTH 200           // Width of the terminal.
 
 void center_screen(int decided_output_width, char *format, ...);
 int num_digits(int number_to_get_digits_of);

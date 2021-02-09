@@ -10,13 +10,21 @@ Handles non-map screens.
 #define clrscr() printf("\e[1;1H\e[2J")
 
 /* screen functions */
+void GetMonitorResolution(int *horizontal, int *vertical);
 void title_screen(void);
 void _title(void);
 void controls(void);
 void blade(void);
 void quit(void);
 
+int *height = NULL;
+int *width = NULL;
 /* Map, tile, and Character functions */
+/*
+void GetMonitorResolution(int *horizontal, int *vertical) {
+    *height = GetSystemMetrics(SM_CYSCREEN);
+    *width = GetSystemMetrics(SM_CXSCREEN);
+}*/
 
 /* title_screen : commands the titlescreen and leads to next screens */
 void title_screen(void) {
@@ -32,29 +40,13 @@ void title_screen(void) {
             case Start:
                 Map1 = initialize_map(MAP1Y, MAX_COLUMNS);  // Make map of Map1 size.
                 Map1->player = initialize_player(); // Allocate memory for the player's Character.
-                //Map1->player->health = 70;
-                //Lobby = initialize_map(Lobby, LOBBY_Y, MAX_COLUMNS);
-                //Lobby->player = initialize_player();
                 first_item = NULL;
                 add_item(&first_item, DAMAGE);
-                //add_item(&first_item, JUDGEMENT);
-                //add_item(&first_item, FIRE);
-                //add_item(&first_item, RECOVER);
-                //add_item(&first_item, BULLET);
-                //add_item(&first_item, GOLEM);
-                //add_item(&first_item, RANG);
-                //add_item(&first_item, ALCHEMY);
                 add_item(&first_item, MILK);
                 move_char(Map1, Map1->all_tiles[MAP1Y - 2][MAX_COLUMNS / 2]); // Sets player to the middle bottom tile.
-                //move_char(Lobby, Lobby->all_tiles[LOBBY_Y - 2][MAX_COLUMNS / 2]);
-                allocate_enemy(Map1, Map1->all_tiles[KID_y][KID_x], "Helix", KID_hp, KID_hp, KID_attack, KID, 'c');   // Allocates memory for the 1st "enemy".
-                //allocate_enemy(Map1, Map1->all_tiles[MAP1Y / 2][MAX_COLUMNS / 2], "Matilda", ASSASSIN_hp, ASSASSIN_hp, ASSASSIN_attack, ASSASSIN, '\\');
-                //allocate_enemy(Map1, Map1->all_tiles[MAP1Y / 2][MAX_COLUMNS / 2 + 1], "Lachlan", HACKER_hp, HACKER_hp, HACKER_attack, HACKER, '/');
-                //allocate_enemy(Map1, Map1->all_tiles[MAP1Y / 2][MAX_COLUMNS / 2], "Faiza", ARTIST_hp, ARTIST_hp, ARTIST_attack, ARTIST, '&');
-                //allocate_enemy(Lobby, Lobby->all_tiles[4][3], "Chike", FERAL_hp, FERAL_hp, FERAL_attack, FERAL, '!');
+                allocate_enemy(Map1, Map1->all_tiles[KID_y][KID_x], "Cue", KID_hp, KID_hp, KID_attack, KID, 'c');   // Allocates memory for the 1st "enemy".
                 set_state_vals(Controller, FALSE, FALSE, TRUE, FALSE, FALSE);
                 fmt_map(Map1);
-                //fmt_map(Lobby);
                 break;
         }
     }

@@ -11,11 +11,19 @@ Also implements the fundamentals of the battle system.
 #include "controller.h"
 #include "rockpaperscissors.h"
 #include "tictactoe.h"
+
+#define SDL_MAIN_HANDLED 1
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
+
+#define WINDOWS_MUSIC 0
+#if WINDOWS_MUSIC
 #include <windows.h>
 #include <mmsystem.h>
 #pragma comment(lib, "Winmm.lib")
+#endif
 
-#define INIT_HEALTH 45  // Default starting maximum health of player
+#define INIT_HEALTH 65  // Default starting maximum health of player
 #define INIT_ATTACK 2   // Default starting attack of player
 #define MAX_ENEMIES 3   // Maximum number of enemies in a map 
 #define INIT_KARMA 50   // Default starting karma of player
@@ -219,28 +227,28 @@ void DOC_behavior(struct Character *player_ptr, struct Character *DOC_ptr, int t
     switch (turn_no % 4) {
         case 0:
             if (!operation_commence && injected) {
-                center_screen(WIDTH, "%s\n", "Arata injects some strange catalyst into his arms.");
+                center_screen(WIDTH, "%s\n", "Hayato injects some strange catalyst into his arms.");
                 DOC_ptr->attack *= 2;
                 injected = FALSE;
             }
             if (DOC_ptr->health <= 8 && !operation_commence) {
-                center_screen(WIDTH, "%s\n", "Arata fled the room but soon returns with a surgery kit. What's he planning?");
+                center_screen(WIDTH, "%s\n", "Hayato fled the room but soon returns with a surgery kit. What's he planning?");
                 operation_commence = TRUE;
             }
             else {
-                center_screen(WIDTH, "%s\n", "Arata's biceps surge as he looks on with an evil eye.");
+                center_screen(WIDTH, "%s\n", "Hayato's biceps surge as he looks on with an evil eye.");
                 ++DOC_ptr->attack;
             }
             sleep(1);
             break;
         case 1:
-            center_screen(WIDTH, "%s\n", "Arata slashes with his scissors!");
+            center_screen(WIDTH, "%s\n", "Hayato slashes with his scissors!");
             damage_dealt(DOC_ptr, player_ptr, DOC_ptr->attack);
             --DOC_ptr->attack;
             break;
         case 2:
             if (DOC_ptr->health < 9) {
-                center_screen(WIDTH, "%s\n", "Arata slices your dominant hand with his scissors!");
+                center_screen(WIDTH, "%s\n", "Hayato slices your dominant hand with his scissors!");
                 if (player_ptr->attack > 1) {
                     --player_ptr->attack;
                     center_screen(WIDTH, "%s\n", "Your attack decreased by 1 for this battle.");
@@ -248,7 +256,7 @@ void DOC_behavior(struct Character *player_ptr, struct Character *DOC_ptr, int t
                 }
             }
             else
-                center_screen(WIDTH, "%s\n", "Arata lunges at you with a scalpel."); 
+                center_screen(WIDTH, "%s\n", "Hayato lunges at you with a scalpel."); 
             damage_dealt(DOC_ptr, player_ptr, DOC_ptr->attack);
             ++DOC_ptr->attack;
             if (operation_commence)
@@ -256,18 +264,18 @@ void DOC_behavior(struct Character *player_ptr, struct Character *DOC_ptr, int t
             break;
         case 3:
             if (!operation_commence && DOC_ptr->health > 10) {
-                center_screen(WIDTH, "%s\n", "Arata injects some amber fluid labeled Synthol into his arms.");
+                center_screen(WIDTH, "%s\n", "Hayato injects some amber fluid labeled Synthol into his arms.");
                 damage_dealt(DOC_ptr, DOC_ptr, 5);
                 injected = TRUE;
                 extra_store('+', SYNTHOL);
             }
             else if (operation_commence) {
-                center_screen(WIDTH, "%s\n", "Arata performs surgery on you at a surprising pace!");
+                center_screen(WIDTH, "%s\n", "Hayato performs surgery on you at a surprising pace!");
                 damage_dealt(DOC_ptr, player_ptr, DOC_ptr->attack);
                 DOC_ptr->attack /= 2;
             }
             else {
-                center_screen(WIDTH, "%s\n", "Arata takes a dose of Dexedrine.");
+                center_screen(WIDTH, "%s\n", "Hayato takes a dose of Dexedrine.");
                 health_healed(DOC_ptr, player_ptr, 5);
             }
             sleep(1);
@@ -1399,16 +1407,26 @@ void JUDGE_behavior(struct Character *player_ptr, struct Character *JUDGE_ptr, i
 
 /* intro : cues dialogue that introduces the enemy - comments will try to explain each line of dialogue */
 int intro(struct Character *enemy_ptr, struct Character *player_ptr) {
-    int keystr, symbol;
+    int keystr = Placeholder, symbol;
     skip_scene = FALSE;
     clrscr();
     fate_store(symbol = enemy_ptr->rep, VICTORIOUS);
 
-    char intro_file[28];
-    char battle_file[28];
-    sprintf(intro_file, "Music\\Wav Files\\%c\\%c_i.wav", symbol, symbol);
-    sprintf(battle_file, "Music\\Wav Files\\%c\\%c_b.wav", symbol, symbol);
-    //PlaySound(TEXT(intro_file), NULL, SND_ASYNC | SND_LOOP);
+    char intro_file[50];
+    char battle_file[50];
+
+    Mix_Chunk *intro_wav = NULL;
+    sprintf(intro_file, "Music\\Wav Files\\%s_i.wav", enemy_ptr->name);
+    if ((intro_wav = Mix_LoadWAV(intro_file)) == NULL) {
+        fprintf(stderr, "Could not load intro wav file.\n");
+    }
+
+    if (Mix_FadeInChannel(-1, intro_wav, -1, 3000) == -1) {
+        fprintf(stderr, "Could not play intro wav file.\n");
+    }
+    #if WINDOWS_MUSIC
+    PlaySound(TEXT(intro_file), NULL, SND_ASYNC | SND_LOOP);
+    #endif
     switch (symbol) {
         case 'c':
             enemy_ptr->ai = &KID_behavior;
@@ -1556,7 +1574,7 @@ int intro(struct Character *enemy_ptr, struct Character *player_ptr) {
                                            "dissolve in an incinerator. Y'know? My clients have that mutual feeling too.");
                     character_line('^', "Don't be so hard on yourself when I beat you up right now.");
                 }
-                return FALSE;
+                keystr = No;
             }
             break;
         case 'L':
@@ -1760,7 +1778,7 @@ int intro(struct Character *enemy_ptr, struct Character *player_ptr) {
             character_line('^', "What in the world?! Where'd this come from?!");
             character_line('|', "Hurry, and free yourself from this trap! You must win this game, man.");
             character_line(symbol, "Grrr...");
-            return FALSE;
+            keystr = No;
             break;
         case '&':
             enemy_ptr->ai = ARTIST_behavior;
@@ -1779,7 +1797,7 @@ int intro(struct Character *enemy_ptr, struct Character *player_ptr) {
             character_line('^', "Sorry, but this drawing won't come into fruition. I came all this way to you.");
             character_line(symbol, "I've come all this way as well...");
             character_line('|', "She fights with her emotions, so it might not be clear what's happening. Fight on!");
-            return FALSE;
+            keystr = No;
             break;
         case '!':
             enemy_ptr->ai = &POLITICIAN_behavior;
@@ -1797,7 +1815,7 @@ int intro(struct Character *enemy_ptr, struct Character *player_ptr) {
             character_line(symbol, "Believe me. Have some faith. I won't hesitate to savagely kill you.");
             character_line('|', "Well, you've gotta get this guy out of the game at some point. If not now, when?");
             character_line('^', "Maybe you don't get this often, but I don't believe any words that you spout out of your mouth.");
-            return FALSE;
+            keystr = No;
             break;
         case '/':
             enemy_ptr->ai = &HACKER_behavior;
@@ -1809,7 +1827,7 @@ int intro(struct Character *enemy_ptr, struct Character *player_ptr) {
                 character_line('|', "Oho! He's a knowledgeable criminal, the worst of the worst.");
                 character_line('^', "By the will of my wish and the conviction of my contract, I demand a fight!");
                 character_line(symbol, "Have it your way. I'll do what my sister couldn't do and kill you!");
-                return FALSE;
+                keystr = No;
             }
             else {
                 character_line(symbol, "Hey, you'll be stayin' in the lobby until the others are picked up. Don't do anythin' stupid.");
@@ -1898,22 +1916,31 @@ int intro(struct Character *enemy_ptr, struct Character *player_ptr) {
             character_line('^', "Your enemy? What should I do?");
             character_line(symbol, "You do know you have a quota to withhold? Man, brats like you...");
             character_line(symbol, "I adore them so.");
-            return FALSE;
+            keystr = No;
             break;
     }
-    while ((keystr = getaction(Controller)) != _EOF && keystr != Yes && keystr != No)
+    while (keystr != No && (keystr = getaction(Controller)) != _EOF && keystr != Yes)
         ;
+    #if WINDOWS_MUSIC
     PlaySound(NULL, NULL, 0);
+    #endif
+    
+    Mix_Chunk *battle_wav = NULL;
     if (keystr != _EOF) {
-        if (keystr == TRUE)
+        if (keystr == Yes)
             return TRUE;
         else {
-            switch (enemy_ptr->rep) {
-                case '+':
-                    PlaySound(TEXT("Music\\Wav Files\\+\\+_Battle_Prelude.wav"), NULL, SND_SYNC);
-                    break;
+            #if WINDOWS_MUSIC
+            PlaySound(TEXT(battle_file), NULL, SND_ASYNC | SND_LOOP);
+            #endif
+            sprintf(battle_file, "Music\\Wav Files\\%s_b.wav", enemy_ptr->name);
+            Mix_HaltChannel(-1);
+            if ((battle_wav = Mix_LoadWAV(battle_file)) == NULL) {
+                fprintf(stderr, "Could not load battle wav file.\n");
             }
-            //PlaySound(TEXT(battle_file), NULL, SND_ASYNC | SND_LOOP);
+            if (Mix_FadeInChannel(-1, battle_wav, -1, 3000) == -1) {
+                fprintf(stderr, "Could not play battle wav file.\n");
+            }       
             return FALSE;
         }
     }
@@ -2396,6 +2423,7 @@ void decline(struct Character *enemy_ptr, struct Character *player_ptr) {
             character_line('|', "You've still got a quota to meet, so pay attention! We go!");
             break;
     }
+    Mix_FadeOutChannel(-1, 5000);
     fate_store(enemy_ptr->rep, SPARED);
 }
 
@@ -2698,6 +2726,7 @@ void finished(struct Character *player_ptr, struct item *first_item_ptr, struct 
             player_ptr->karma += 20;
             break;
     }
+    Mix_FadeOutChannel(-1, 5000);
     fate_store(enemy_ptr->rep, CONVICTED);
 }
 

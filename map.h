@@ -739,7 +739,7 @@ struct Map *initialize_Map2(void) {
         empty_map->all_tiles[i][7]->symbol = '|';
         set_prop_vals(empty_map->all_tiles[i][7], FALSE, FALSE, FALSE);
     }
-    allocate_enemy(empty_map, empty_map->all_tiles[DOC_y][DOC_x], "Arata", DOC_hp, DOC_hp, DOC_attack, DOC, '+');
+    allocate_enemy(empty_map, empty_map->all_tiles[DOC_y][DOC_x], "Hayato", DOC_hp, DOC_hp, DOC_attack, DOC, '+');
     allocate_enemy(empty_map, empty_map->all_tiles[QUEEN_y][QUEEN_x], "Lille", QUEEN_hp, QUEEN_hp, QUEEN_attack, QUEEN, 'M');
     return empty_map;
 }
@@ -904,11 +904,12 @@ void trigger_battle(struct Map *map_ptr, struct Character *enemy_ptr, int turn_n
         player_death();
     /* won the battle -> trigger some event, prevent soft-locking w/ second condition */
     else if (enemy_ptr->health <= 0 || enemy_ptr->health < 3 && enemy_ptr->buff == REGEN) {
+        #if WINDOWS_MUSIC
         PlaySound(NULL, NULL, 0);
+        #endif
         map_ptr->player->attack = player_strength;
         finished(map_ptr->player, first_item, enemy_ptr);
         identify_tile(map_ptr, enemy_ptr->occupied->y, enemy_ptr->occupied->x)->prop.is_occupied = FALSE;
-        //move_char(map_ptr, enemy_ptr->occupied);
         map_ptr->player->buff = NONE, map_ptr->player->debuff = NONE;
         if (DEBUG) {
             printf("POP trigger_battle\n");
