@@ -7,10 +7,10 @@
 4. Dialogues and turn-based boss battles
 
 # How to compile 
-OS: Windows 10
-MinGW gcc version: 9.2.0 
-Dependency: SDL2, SDL2_mixer
-Tools: 7-zip
+OS: Windows 10  
+MinGW gcc version: 9.2.0  
+Dependency: SDL2, SDL2_mixer  
+Tools: 7-zip  
 
 Procedure:
   1. Clone repository to your computer.
