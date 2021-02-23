@@ -9,8 +9,10 @@ Also implements the fundamentals of the battle system.
 #include "fate.h"
 #include "general.h"
 #include "controller.h"
+
 #include "rockpaperscissors.h"
 #include "tictactoe.h"
+#include "russian_roulette.h"
 
 #define SDL_MAIN_HANDLED 1
 #include <SDL2/SDL.h>
@@ -2213,7 +2215,7 @@ void decline(struct Character *enemy_ptr, struct Character *player_ptr) {
                         ++round;
                     }
                     clrscr();
-                    printf("^| %.1f - %.1f |? Bo5\n", your_score, foe_score);
+                    printf("^| %.1f - %.1f |? Bo5\n", your_score, foe_score);   // Print final score
                     sleep(3);
                     if (your_score == foe_score) {
                         character_line(symbol, "Congrats, you won!");
@@ -2255,7 +2257,7 @@ void decline(struct Character *enemy_ptr, struct Character *player_ptr) {
                         sleep(2);
                     }
                     clrscr();
-                    printf("^| %d - %d |? Bo7\n", (int) your_score, (int) foe_score);
+                    printf("^| %d - %d |? Bo7\n", (int) your_score, (int) foe_score);   // Print final score
                     sleep(3);
                     if (your_score > foe_score) {
                         character_line(symbol, "Congrats on your win!");
@@ -2280,42 +2282,23 @@ void decline(struct Character *enemy_ptr, struct Character *player_ptr) {
                     character_line('|', "As per the guidelines, you'll have to convince ME to be able to use your revolver.");
                     character_line('^', "All I need is one live round. Think about it. No matter the outcome, justice will be served.");
                     character_line('|', "I can't really argue against that, can I? I'll allow it, just this once. Don't lose your head now.");
-                    character_line('^', "So? Will you play? Look, there's a revolver we can use.");
-                    character_line(symbol, "I guess. If I don't play, *Fortuna* will look down on me. So, I must! It's my turn.");
+                    character_line('^', "So? Will you play? Look, here's a revolver we can use.");
+                    character_line(symbol, "I guess. If I don't play, *Fortuna* will look down on me. So, I must!");
                     while (TRUE) {
                         clrscr();
                         printf("^| %d - %d |? Bo1\n", (int) your_score, (int) foe_score);
-                        printf("Dalia spins the cylinder and points the revolver toward her head. She pulls the trigger...\n");
-                        sleep(2);
-                        if ((result = rand() % 7) == 6) {
-                            ++your_score;
-                            printf("A shot rings out.\n");
-                            player_ptr->karma += 7;
-                            break;
-                        }
-                        else {
-                            printf("Nothing happened.\n");
-                            printf("Dalia tosses the revolver to you with a sigh of relief.\n");
-                        }
-                        character_line('^', "It's my turn...");
-                        printf("You spin the cylinder and point the revolver toward your head. You pull the trigger...\n");
-                        sleep(2);
-                        if ((result = rand() % 7) == 6) {
+                        if (duel_enemy() == DEAD) {
                             ++foe_score;
-                            printf("A shot rings out.\n");
-                            break;
                         }
                         else {
-                            printf("Nothing happened.\n");
-                            printf("You toss the revolver over to Dalia.\n");
-                            sleep(2);
+                            ++your_score;
                         }
+                        break;
                     }
                     printf("^| %d - %d |?\n", (int) your_score, (int) foe_score);
                     sleep(3);
                     if (foe_score == 1) {
                         player_death();
-                        exit(EXIT_SUCCESS);
                     }
                     center_screen(WIDTH, "%s\n", "You find a shard of a broken die on the floor.");
                     fate_store(symbol, CONVICTED);

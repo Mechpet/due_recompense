@@ -50,7 +50,6 @@ void title_screen(void) {
                 break;
         }
     }
-    
     quit();
 }
 

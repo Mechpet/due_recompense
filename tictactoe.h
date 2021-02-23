@@ -29,7 +29,7 @@ enum difficulties {
 };
 
 void layout(struct Game *tictac);
-void your_turn(struct Game *tictac);
+void your_turn_TTT(struct Game *tictac);
 
 int row_within(int opposing[5], int allied[5]);
 int column_within(int opposing[5], int allied[5]);
@@ -76,7 +76,7 @@ int play_opponent(int difficulty, char rep) {
     while (1) {
         layout(tictac); // Display the current state of the tic-tac-toe board game
         if (rep == 'X') // The player that has 'X' acts on odd-numbered turns
-            your_turn(tictac);
+            your_turn_TTT(tictac);
         else
             difficulty_behavior(tictac);
         if ((result = win(tictac, (tictac->turn_no % 2) ? 'X' : 'O')) != INACTIVE)  // If a player won the game after the previous turn, the terminating condition has been met
@@ -87,7 +87,7 @@ int play_opponent(int difficulty, char rep) {
             break;
 
         if (rep == 'O') // The player that has 'O' acts on even-numbered turns
-            your_turn(tictac);
+            your_turn_TTT(tictac);
         else
             difficulty_behavior(tictac);
         if ((result = win(tictac, (tictac->turn_no % 2) ? 'X' : 'O')) != INACTIVE)  // Check for a win after the previous turn for who just acted (terminating condition)
@@ -140,12 +140,12 @@ void layout(struct Game *tictac) {
     }
 }
 
-/* your_turn:
+/* your_turn_TTT:
  * Arguments: tictac is the game structure used to play the game
  * Implementation: Uses while loops to parse through characters and repeatedly prompt user for input until valid 
  * Purpose: Receive formatted user input */
 /*
-void your_turn(struct Game *tictac) {
+void your_turn_TTT(struct Game *tictac) {
     char xo = (tictac->turn_no % 2) ? 'X' : 'O';
     int x, y, c, cp, cpp, cppp, square, eff_move;
     unsigned int legal_move = 0;
@@ -203,7 +203,7 @@ void your_turn(struct Game *tictac) {
         }
     }
 }*/
-void your_turn(struct Game *tictac) {
+void your_turn_TTT(struct Game *tictac) {
     char xo = (tictac->turn_no % 2) ? 'X' : 'O';
     char buffer[10];
     int x, y, num_read, square, eff_move;
@@ -862,11 +862,11 @@ void opponent_behavior_standard(struct Game *tictac) {
             allied[v++] = i;
     }
     if ((target = target_recognition(tictac, allied, opposing)) != INACTIVE) {
-        printf("Detected possible win!\n");
+        //printf("Detected possible win!\n");
         *tictac->board[target] = rep;
     }
     else if ((target = target_recognition(tictac, opposing, allied)) != INACTIVE) {
-        printf("Detected possible loss!\n");
+        //printf("Detected possible loss!\n");
         *tictac->board[target] = rep;
     }
     else {

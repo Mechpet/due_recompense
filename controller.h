@@ -155,5 +155,8 @@ void player_death(void) {
     "________________|__\\|/__|________________\n"
     "             \"Here lies you\"";
     puts(die_buffer);
+    sleep(15);
+    exit(EXIT_SUCCESS);
+
 }
 #endif /* ends ifndef CONTROLLER_H */
