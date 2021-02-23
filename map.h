@@ -927,12 +927,13 @@ void trigger_battle(struct Map *map_ptr, struct Character *enemy_ptr, int turn_n
     ui(map_ptr->player);
     center_screen(WIDTH, "%s\n%s\n", player_status, enemy_status);
     center_screen(WIDTH, "%s\n", "r : Attack / i : Inventory");
+    set_state_vals(Controller, FALSE, FALSE, FALSE, TRUE, FALSE);
     while ((keystr = getaction(Controller)) != _EOF) {
         if (map_ptr->player->debuff == RESTRAINED || map_ptr->player->debuff == ASLEEP) {
             center_screen(WIDTH, "%s\n", "You can't fight back!");
             if (map_ptr->player->buff == SUMMON) {
                 center_screen(WIDTH, "%s\n", "Yosef slams his fist down!");
-                enemy_ptr->health -= 3;
+                enemy_ptr->health -= map_ptr->player->ally_attack;
             }
             if (enemy_ptr->health > 0)
                 (*enemy_ptr->ai)(map_ptr->player, enemy_ptr, turn_no);
@@ -942,6 +943,7 @@ void trigger_battle(struct Map *map_ptr, struct Character *enemy_ptr, int turn_n
         }
         switch (keystr) {
             case Select:
+                set_state_vals(Controller, TRUE, FALSE, FALSE, TRUE, FALSE);
                 damage_dealt(map_ptr->player, enemy_ptr, map_ptr->player->attack);
                 if (map_ptr->player->buff == SUMMON) {
                     center_screen(WIDTH, "%s\n", "Yosef slams his fist down!");
@@ -1011,6 +1013,7 @@ struct item *inventory_screen(struct item *first_item_slot, struct Map *map_ptr,
 void item_turn(struct item *item_used, struct Map *map_ptr, struct Character *enemy_ptr, int turn_no) {
     struct item *item_scanned;
     int amt;
+    set_state_vals(Controller, TRUE, FALSE, FALSE, TRUE, FALSE);
     map_ptr->player->karma -= item_used->karma_cost;
     switch (item_used->effect) {
         case DAMAGE:

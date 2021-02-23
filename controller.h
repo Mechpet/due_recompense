@@ -4,6 +4,7 @@ The result is the player/user types in their input and submits via 'enter' key. 
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <conio.h>
 #include <string.h>
 
 // Shields from stacking this header file in other files
@@ -55,10 +56,13 @@ struct controller {
  * Purpose: receive standard input if in the position to do so (based on player_state), then return the decided input */
 int getaction(struct controller *in) {
     char line[BUFFER_SIZE];
-    if (in->player_state.is_waiting)
+    if (in->player_state.is_waiting || _kbhit()) {  // If player is supposed to be waiting or the program is in sleep() && input to the console has been detected
+        _getch();   // Discards input typed while in sleep()
         return Placeholder;
+    }
     else {
         printf(">");    // Prompt the player for input with this character
+        fflush(stdin);
         if (fgets(line, BUFFER_SIZE, stdin) == NULL)    // Gets input up to '\n' if of defined behavior
             return _EOF;    // If the behavior is undefined, return -1
         if (sscanf(line, "%c", &in->input) != 1)    // Stores 1 character of input in controller.input
