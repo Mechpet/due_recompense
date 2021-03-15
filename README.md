@@ -31,7 +31,10 @@ Note: C:\MinGW\include\lib should be replaced with the directory where libSDL2.a
 # Sources:
 Tools/Programs used for soundtrack:  
   OrgMaker2  
-  org2xm  
+  org2xm
+  Bandlab by Cakewalk
+  Soundtrap
+  Flakbus Studios
   Audacity  
   https://www.coolutils.com/online/XM-to-WAV  
 
