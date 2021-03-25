@@ -23,16 +23,24 @@ enum bindings {
     RR          = 82, /* 'R' */
     Left        = 97, /* 'a' */
     Cancel      = 99, /* 'c' */
+    Defense     = 99, /* 'c' */
     Right       = 100, /* 'd' */
+    Easy        = 101, /* 'e' */
     Fight       = 102, /* 'f' */
+    Hard        = 104, /* 'h' */
     Inventory   = 105, /* 'i' */
     Lessons     = 108, /* 'l' */
+    Normal      = 110, /* 'n' */
     No          = 110, /* 'n' */
     Select      = 114, /* 'r' */
     Down        = 115, /* 's' */
+    Sword       = 115, /* 's' */
+    Sibling     = 115, /* 's' */
     TicTacToe   = 116, /* 't' */
     Up          = 119, /* 'w' */
-    Yes         = 121 /* 'y' */
+    Signature   = 120, /* 'x' */
+    Yes         = 121, /* 'y' */
+    Attack      = 122 /* 'z' */
 };
 
 // Describes the game's current state - what is the player's screen in right now?
@@ -63,10 +71,12 @@ int getaction(struct controller *in) {
     else {
         printf(">");    // Prompt the player for input with this character
         fflush(stdin);
-        if (fgets(line, BUFFER_SIZE, stdin) == NULL)    // Gets input up to '\n' if of defined behavior
+        if (fgets(line, BUFFER_SIZE, stdin) == NULL) {   // Gets input up to '\n' if of defined behavior
             return _EOF;    // If the behavior is undefined, return -1
-        if (sscanf(line, "%c", &in->input) != 1)    // Stores 1 character of input in controller.input
+        }
+        if (sscanf(line, "%c", &in->input) != 1) {   // Stores 1 character of input in controller.input
             return _EOF;    // If character was not stored, return -1 (undefined behavior)
+        }
     }
     return in->input;   // All tests passed and a character was inputted; just return that character of input
 }
@@ -79,15 +89,17 @@ int getnumber(void) {
     char number[MAX_NUM];
     int i, num = 0;
     printf(">");    // Prompt the player for input with this character
-    if (fgets(number, MAX_NUM, stdin) == NULL)  // Gets input up to '\n' if of defined behavior
+    if (fgets(number, MAX_NUM, stdin) == NULL) { // Gets input up to '\n' if of defined behavior
         return _EOF;    // If the behavior is undefined, return -1
+    }
     for (i = 0; i < strlen(number); ++i) {  // Iterate through the array of characters, checking that all of them are digits
         if (!isdigit(number[i]) && number[i] != '\n') { // Only digits and '\n' should be accepted, so return -1 if another character was found
             printf("Invalid number.\n");
             return _EOF;
         }
-        else if (isdigit(number[i]))    // If the character at number[i] was a digit, sum up in the integer value num
+        else if (isdigit(number[i])) {   // If the character at number[i] was a digit, sum up in the integer value num
             num = (num * 10 + number[i] - '0'); // Multiply by 10 for every extra number (weight the order of numbers) and add the extra number
+        }
     }
     return num;
 }
@@ -97,16 +109,11 @@ int getnumber(void) {
  * Implementation: Dynamic memory allocation
  * Purpose: allocates memory for the controller structure */
 struct controller *initialize_controller(struct controller *in) {
-    if ((in = malloc(sizeof(*in))) == NULL)
+    if ((in = malloc(sizeof(*in))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate controller");
+    }
     return in;
 }
-/*
-struct controller *initialize_controller(struct controller *in) {
-    if ((in = malloc(sizeof(*in))) == NULL)
-        fprintf(stderr, "FATAL: No more memory to allocate controller");
-    return in;
-}*/
 
 /* set_state_vals : 
  * Arguments: in is of the controller structure (will be a global variable)

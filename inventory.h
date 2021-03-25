@@ -1,7 +1,7 @@
 /* inventory.h
 Functions that implement the inventory system. */
 
-#define MAX_LENGTH 330  // Maximum length of a description for an item in inventory
+#define MAX_LENGTH 400  // Maximum length of a description for an item in inventory
 #define MAX_SIZE 200    // Maximum length of an ASCII art of an item in inventory
 #include <string.h> 
 #include <stdlib.h>
@@ -30,7 +30,7 @@ enum item_effects {
     UNCENSOR,
     MILK,
     TRAP,
-    DUE_RECOMPENSE
+    DUE_RECOMPENSE,
 };
 
 // Numbers that correspond to each obtainable item's karma cost (property of an inventory item)
@@ -71,7 +71,7 @@ struct item {
     int uses;   // The affiliated number of uses of the inventory item
     unsigned int effect;    // Identifies what the item is based on item_effects
     struct item *next_item; // Pointer to the next item in the inventory (self-referential data structure)
-} *first_item;  // Always use the first_item as a base when using the inventory (scrolls through other items with next_item)
+} *first_item, *first_enemy_item;  // Always use the first_item as a base when using the inventory (scrolls through other items with next_item)
 
 /* DAMAGING = Items that primarily inflict damage */
 void chainsaw_allocate(struct item **item_ptr);
@@ -100,18 +100,21 @@ void strengthshard_allocate(struct item **item_ptr);
 void rang_allocate(struct item **item_ptr);
 void circle_allocate(struct item **item_ptr);
 void sword_allocate(struct item **item_ptr);
-void milk_allocate(struct item **Item_ptr);
+void milk_allocate(struct item **item_ptr);
 
 void add_item(struct item **first_item_ptr, int item_id);
 void allocate_item(struct item **empty_item_slot, int item_id);
+struct item *has_item(struct item **first_item_ptr, int item_id);
+void free_item(struct item **item_ptr);
 
 /* (item)_allocate : 
  * Arguments: item_ptr is a pointer to pointer to item structure (pointer to pointer does not change the address the pointer to item structure points to)
  * Implementation: Dynamically allocate memory for the item structure, copy the description and art of the item, store the affiliated values, point the next_item to nothing
  * Purpose: Store the item with identifier (item_effects) */
 void chainsaw_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate DAMAGE item.\n");
+    }
     strcpy((*item_ptr)->description, "[2 Karma]\nA mini-chainsaw for dissecting the sins out of your enemies. Inflicts twice your attack power (non-flat) to the enemy.\nYou nicknamed it \"Shak Kiya Vijaya\".");
     strcpy((*item_ptr)->image, 
     " _______________\n"
@@ -131,9 +134,10 @@ void chainsaw_allocate(struct item **item_ptr) {
 /* boots_allocate : allocates memory for an offensive-buff item in inventory 
 */
 void boots_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate RUSH item.\n");
-    strcpy((*item_ptr)->description, "[9 Karma]\nA pair of nice-looking boots that have been well-maintained. Grants a buff that doubles (non-flat) attacks' power up to 5 additional damage.\nYou nicknamed it \"Nine-League Boots\".");
+    }
+    strcpy((*item_ptr)->description, "[9 Karma]\nA pair of nice-looking boots that have been well-maintained. Grants a normal buff that doubles (non-flat) attacks' power up to 5 additional damage.\nYou nicknamed it \"Nine-League Boots\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "| *  _______  * |\n"
@@ -152,8 +156,9 @@ void boots_allocate(struct item **item_ptr) {
 /* medicine_allocate : allocates memory for a healing item in inventory
    Intended effect   : Heals health */
 void medicine_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate HEAL item.\n");
+    }
     strcpy((*item_ptr)->description, "[10 Karma]\nA shiny chalice filled to the brim with bull's blood. Heals half of your missing health (truncated).\nYou nicknamed it \"Mithras Mithridate\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
@@ -173,9 +178,10 @@ void medicine_allocate(struct item **item_ptr) {
 /* shield_allocate : allocates memory for a defensive-buff item in inventory
    Intended effect : Take 50 - 100 % damage depending on karma */
 void shield_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate GUARD item.\n");
-    strcpy((*item_ptr)->description, "[(Damage Taken) Karma]\nA sacred shield that's a bit battered. Reduces next (non-flat) attack to 33%-100% damage based on karma.\nI.e. Damage Taken = Damage - Damage fully blocked + Remaining Damage not blocked. EX: Karma = 5, incoming damage = 18, damage taken = (18 - 5 * 3) + 18 / 3 = 8.\nYou nicknamed it \"Subdititius Ancile\".");
+    }
+    strcpy((*item_ptr)->description, "[(Damage Taken) Karma]\nA sacred shield that's a bit battered. Reduces next (non-flat) attack to 33%-100% damage based on karma as a normal buff.\nI.e. Damage Taken = Damage - Damage fully blocked + Remaining Damage not blocked. EX: Karma = 5, incoming damage = 18, damage taken = (18 - 5 * 3) + 18 / 3 = 8.\nYou nicknamed it \"Subdititius Ancile\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "|    o==O==o    |\n"
@@ -192,9 +198,10 @@ void shield_allocate(struct item **item_ptr) {
 }
 
 void drink_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate RECOVER item.\n");
-    strcpy((*item_ptr)->description, "A strong alcoholic beverage that contains a hundred herbs. Dispels debuffs from self and heals 3 health.\nThe label reads \"Centerba\".");
+    }
+    strcpy((*item_ptr)->description, "A strong alcoholic beverage that contains a hundred herbs. Dispels normal debuffs from self and heals 3 health.\nThe label reads \"Centerba\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "|      __ _ ~   |\n"
@@ -211,9 +218,10 @@ void drink_allocate(struct item **item_ptr) {
 }
 
 void bag_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate RECOVER item.\n");
-    strcpy((*item_ptr)->description, "[10 Karma]\nAn ancient trickster's handbag.\nAttempt to steal the enemy's buff. If there is a buff, grants invulnerability on single enemy phase and then after the invulnerability wears off, the buff stolen.\nYou nicknamed it \"Dokkaebi's Purse\".");
+    }
+    strcpy((*item_ptr)->description, "[10 Karma]\nAn ancient trickster's handbag.\nAttempt to steal the enemy's normal buff. If there is a normal buff, grants invulnerability on a single enemy phase as a normal buff and then after the invulnerability wears off, the normal buff is stolen.\nYou nicknamed it \"Dokkaebi's Purse\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "|//  _______  \\\\|\n"
@@ -230,9 +238,10 @@ void bag_allocate(struct item **item_ptr) {
 }
 
 void arrow_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate FIRE item.\n");
-    strcpy((*item_ptr)->description, "[6 Karma]\nAn arrowhead hot to the touch. Inflicts debuff that does 2 (flat) dmg at the start of turns.\nYou nicknamed it \"Agneyastra's Flint\".");
+    }
+    strcpy((*item_ptr)->description, "[6 Karma]\nAn arrowhead hot to the touch. Inflicts a normal debuff that does 2 (flat) dmg at the start of turns.\nYou nicknamed it \"Agneyastra's Flint\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "| .^.   )\\ / ( /|\n"
@@ -249,9 +258,10 @@ void arrow_allocate(struct item **item_ptr) {
 }
 
 void food_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate FEAST item.\n");
-    strcpy((*item_ptr)->description, "[7 Karma]\nAn endless supply of food. Grants a buff that adds 2 atk and reduces 2 dmg to (non-flat) attacks dealt and received respectively (after multipliers).\nYou nicknamed it \"Achelous's Horn\".");
+    }
+    strcpy((*item_ptr)->description, "[7 Karma]\nAn endless supply of food. Grants a normal buff that adds 2 atk and reduces 2 dmg to (non-flat) attacks dealt and received respectively (after multipliers).\nYou nicknamed it \"Achelous's Horn\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "|               |\n"
@@ -268,9 +278,10 @@ void food_allocate(struct item **item_ptr) {
 }
 
 void toxin_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate FAMINE item.\n");
-    strcpy((*item_ptr)->description, "[7 Karma]\nAn endless supply of weak poisons. Inflicts a debuff that reduces 3 dmg from (non-flat) attacks (after multipliers) after 1 turn.\nYou nicknamed it \"Achelous's Spike\".");
+    }
+    strcpy((*item_ptr)->description, "[7 Karma]\nAn endless supply of weak poisons. Inflicts a normal debuff that reduces 3 dmg from (non-flat) attacks (after multipliers) after 1 turn.\nYou nicknamed it \"Achelous's Spike\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "|               |\n"
@@ -287,9 +298,10 @@ void toxin_allocate(struct item **item_ptr) {
 }
 
 void moonshard_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate MOON item.\n");
-    strcpy((*item_ptr)->description, "[9 Karma]\nAn asteroid shard. Grants a buff that heals 2 health at the start of turns.\nYou nicknamed it \"3 Fortuna\".");
+    }
+    strcpy((*item_ptr)->description, "[9 Karma]\nAn asteroid shard. Grants a normal buff that heals 2 health at the start of turns.\nYou nicknamed it \"3 Fortuna\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "| .       +    *|\n"
@@ -306,8 +318,9 @@ void moonshard_allocate(struct item **item_ptr) {
 }
 
 void judgedshard_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate THUNDER item.\n");
+    }
     strcpy((*item_ptr)->description, "[INPUT hp]\nAn asteroid shard. Does (flat) damage to the enemy decided by player INPUT.\nYou nicknamed it \"20 Fortuna\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
@@ -325,8 +338,9 @@ void judgedshard_allocate(struct item **item_ptr) {
 }
 
 void temperedshard_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate TEMPER item.\n");
+    }
     strcpy((*item_ptr)->description, "[3 Karma]\nAn asteroid shard. Increases everybody's attack power by 1 only for the duration of the battle.\nYou nicknamed it \"11 Fortuna\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
@@ -340,13 +354,14 @@ void temperedshard_allocate(struct item **item_ptr) {
     "| .  +  \\_/_/   |\n"
     "|  +   .      . |\n"
     "|_______________|");
-    (*item_ptr)->effect = STRENGTH, (*item_ptr)->karma_cost = STRENGTH_COST, (*item_ptr)->uses = INFINITE, (*item_ptr)->next_item = NULL;
+    (*item_ptr)->effect = TEMPER, (*item_ptr)->karma_cost = TEMPER_COST, (*item_ptr)->uses = INFINITE, (*item_ptr)->next_item = NULL;
 }
 
 void strengthshard_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate TEMPER item.\n");
-    strcpy((*item_ptr)->description, "[4 Karma]\nAn asteroid shard. Dispels everyone's buff and debuff.\nYou nicknamed it \"14 Fortuna\".");
+    }
+    strcpy((*item_ptr)->description, "[4 Karma]\nAn asteroid shard. Dispels everyone's normal buff and normal debuff.\nYou nicknamed it \"14 Fortuna\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "|.  _____       |\n"
@@ -363,9 +378,10 @@ void strengthshard_allocate(struct item **item_ptr) {
 }
 
 void doll_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate GOLEM item.\n");
-    strcpy((*item_ptr)->description, "[10 Karma + 15 hp]\nA doll of a golem. Summons / resummons a golem with 15 hp and 3 attack (flat damage) as a buff.\nIt attacks after your actions and receives (non-flat) attacks in place of you. You nicknamed it \"Yosef\".");
+    }
+    strcpy((*item_ptr)->description, "[10 Karma + 15 hp]\nA doll of a golem. Summons / resummons a golem with 15 hp and 3 attack (flat damage) as a normal buff.\nIt attacks after your actions and receives (non-flat) attacks in place of you. You nicknamed it \"Yosef\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "|     _____     |\n"
@@ -382,9 +398,10 @@ void doll_allocate(struct item **item_ptr) {
 }
 
 void rang_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate RANG item.\n");
-    strcpy((*item_ptr)->description, "Custom-made metallic batarang.\nInflict (non-flat) attack power and grants a buff that steals 3 karma per (non-flat) attack from the enemy.");
+    }
+    strcpy((*item_ptr)->description, "Custom-made metallic batarang.\nInflict (non-flat) attack power and grants a normal buff that steals 3 karma per (non-flat) attack from the enemy.");
     char bat[199];
     sprintf(bat, "%s%c%s", 
     " _______________\n"
@@ -404,9 +421,10 @@ void rang_allocate(struct item **item_ptr) {
 }
 
 void bullet_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate BULLET item.\n");
-    strcpy((*item_ptr)->description, "Silver bullets.\nInflict (non-flat) attack power and grants buff that triples next (non-flat) attack's power.");
+    }
+    strcpy((*item_ptr)->description, "Silver bullets.\nInflict (non-flat) attack power and grants a normal buff that triples next (non-flat) attack's power.");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "|o / \\  _  / \\ o|\n"
@@ -423,8 +441,9 @@ void bullet_allocate(struct item **item_ptr) {
 }
 
 void circle_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate ALCHEMY item.\n");
+    }
     strcpy((*item_ptr)->description, "[5 karma + 5 hp]\nAn advanced transmutation circle.\nReplenishes all items' uses by 1 IF not 0 uses up to its maximum capacity.\nIts alchemic name is \"The Philosophers' Stone\".");
     char alc[198];
     sprintf(alc, "%s%c%s%c%s",
@@ -444,9 +463,10 @@ void circle_allocate(struct item **item_ptr) {
 }
 
 void milk_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate MILK item.\n");
-    strcpy((*item_ptr)->description, "A pot of milk from the cosmic Ocean of Milk.\n[5 karma] Grants a buff that increments attack power per inflicted buff on self OR\ndebuffs enemy such that they take 3 (flat) damage when they (non-flat) attack.");
+    }
+    strcpy((*item_ptr)->description, "A pot of milk from the cosmic Ocean of Milk.\n[5 karma] Grants a normal buff that increments attack power per any inflicted buff on self OR\napplies normal debuff on enemy such that they take 3 (flat) damage when they (non-flat) attack.");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "|      ___      |\n"
@@ -463,8 +483,9 @@ void milk_allocate(struct item **item_ptr) {
 }
 
 void eye_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate DRAIN item.\n");
+    }
     strcpy((*item_ptr)->description, "[2 karma]\nA stone carved to the shape of the Eye of Horus.\nInflict (non-flat) half attack power and heal your health for that amount (truncated).");
     strcpy((*item_ptr)->image,
     " _______________\n"
@@ -482,9 +503,10 @@ void eye_allocate(struct item **item_ptr) {
 }
 
 void pen_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate UNCENSOR item.\n");
-    strcpy((*item_ptr)->description, "[8 karma]\nA fountain pen with a beautiful peacock feather.\nInflicts (flat) 5 damage and removes enemy's buff.\n You nicknamed it \"Hera's Pen\".");
+    }
+    strcpy((*item_ptr)->description, "[8 karma]\nA fountain pen with a beautiful peacock feather.\nInflicts (flat) 5 damage and removes enemy's normal buff.\n You nicknamed it \"Hera's Pen\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "| \\ \\/`/_\\'\\/_/ |\n"
@@ -501,8 +523,9 @@ void pen_allocate(struct item **item_ptr) {
 }
 
 void sword_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL)
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate DUE_RECOMPENSE item.\n");
+    }
     strcpy((*item_ptr)->description, "A broken sword carried by another of your kind.\nRecovers 50 karma and fully restores health.");
     strcpy((*item_ptr)->image,
     " _______________\n"
@@ -525,10 +548,12 @@ void sword_allocate(struct item **item_ptr) {
  * Implementation: Recursion
  * Purpose: allocates memory for another item in inventory */
 void add_item(struct item **first_item_ptr, int item_id) {
-    if (*first_item_ptr == NULL)    // Base case: Reached an item slot in inventory that isn't occupied
+    if (*first_item_ptr == NULL) {   // Base case: Reached an item slot in inventory that isn't occupied
         allocate_item(first_item_ptr, item_id);
-    else    // Recursive case: Current item slot in inventory is occupied; keep calling add_item
+    }
+    else {   // Recursive case: Current item slot in inventory is occupied; keep calling add_item
         add_item(&(*first_item_ptr)->next_item, item_id);
+    }
 }
 
 /* allocate_item : 
@@ -602,4 +627,21 @@ void allocate_item(struct item **empty_item_ptr, int item_id) {
             sword_allocate(empty_item_ptr);
             break;
     }
+}
+
+void free_item(struct item **item_ptr) {
+    free(*item_ptr);
+
+    return;
+}
+
+struct item *has_item(struct item **first_item_ptr, int item_id) {
+    struct item *curr_item = *first_item_ptr;
+    while (curr_item) {
+        if (curr_item->effect == item_id) {
+            return curr_item;
+        }
+        curr_item = curr_item->next_item;
+    }
+    return NULL;
 }

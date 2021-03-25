@@ -53,6 +53,6 @@ Music files v1.00 progression:
 02/06/21 - Cue_b finalized
 02/07/21 - Dalia_b finalized
 02/07/21 - Nicolau_b finalized
-
-Music files v2.00 progression:
-(Faiza_i, Matilda_b, Matilda_i, Dalia_i, Dalia_b, Lille_i)
+03/01/21 - ?_b created
+03/08/21 - Cue_i converted to DAW version
+03/08/21 - Cue_b converted to DAW version

@@ -4,6 +4,7 @@
 #include "screen.h"
 
 int main(void) {
+    // Try to initialize SDL_mixer for audio-related functions 
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
         fprintf(stderr, "Audio output not functional.\n");
 		return -1;
@@ -16,7 +17,7 @@ int main(void) {
     fate_initialize();  // This initializes the fate structure before the first Character is encountered
     Controller = initialize_controller(Controller); // This initializes the controller structure before input is accepted
     printf("This is a work of fiction. Behaviors/actions in this game may be offensive/controversial. Thank you for understanding.");
-    sleep(3);   // This pauses the program for 3 seconds before advancing to the title screen
+    sleep(0);   // This pauses the program for 3 seconds before advancing to the title screen
     title_screen(); // This line starts the game up by popping open the title screen.
     SDL_Quit();
     return EXIT_SUCCESS;
