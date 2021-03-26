@@ -47,7 +47,7 @@ enum base_hp {
     BAT_b_hp = 33,
     ASSASSIN_b_hp = 35,
     POLITICIAN_b_hp = 36,
-    COP_b_hp = 600,
+    COP_b_hp = 60,
     JUDGE_b_hp = 66
 };
 
@@ -193,8 +193,8 @@ int post_damage(struct Character *char1, struct Character *char2, int damage);
 void damage_dealt(struct Character *char1, struct Character *char2, int damage);
 void health_healed(struct Character *char1, struct Character *char2, int heal);
 
-char *debuff_status(struct Character *debuffed_char, struct Character *char2);
-char *buff_status(struct Character *buffed_char, struct Character *char2);
+char *debuff_status(struct Character *debuffed_char, struct Character *char2, int turn_no);
+char *buff_status(struct Character *buffed_char, struct Character *char2, int turn_no);
 void debuff_char(struct Character *char1, struct Character *char2, int debuff_no);
 void buff_char(struct Character *char1, struct Character *char2, int buff_no);
 void s_debuff_char(struct Character *char1, struct Character *char2, int s_debuff_no);
@@ -1577,13 +1577,12 @@ unsigned int update_puppet(unsigned int bits, int max_bits) {
 /* JUDGE_behavior : Devastate the player */
 void JUDGE_behavior(struct Enforcer *player_ptr, struct Character *JUDGE_ptr, int turn_no) {
     int keystr, temp;
-    static unsigned int puppets;
-    static unsigned int puppets_depleted;
+    static unsigned int puppets, puppets_depleted;
     if (turn_no == 1) {    // Initialize the static integers 
         puppets = puppet_generator(NUM_PUPPETS);
     }
     /* Last resort */
-    if (JUDGE_ptr->health < JUDGE_ptr->health / 6) {
+    if (JUDGE_ptr->health < JUDGE_ptr->max_health / 6) {
         if (player_ptr->attr->sword_debuff != DISABLED) {
             center_screen(WIDTH, "%s\n", "Your sword feels lighter than usual.");
             s_debuff_char(JUDGE_ptr, player_ptr->attr, DISABLED);
@@ -1646,8 +1645,8 @@ void JUDGE_behavior(struct Enforcer *player_ptr, struct Character *JUDGE_ptr, in
                     printf("hah.\n");
                     sleep(1);
                     center_screen(WIDTH, "%s\n", "A divine light shines between you two before exploding into a star.");
-                    player_ptr->attr->health -= maximum(0, (3 * JUDGE_ptr->attack) - player_ptr->attr->karma / 5);
-                    JUDGE_ptr->health -= maximum(1, (5 * JUDGE_ptr->attack) - JUDGE_ptr->karma / 5);
+                    player_ptr->attr->health -= maximum(1, (10 * JUDGE_ptr->attack) - player_ptr->attr->karma / 5);
+                    JUDGE_ptr->health -= maximum(1, (10 * JUDGE_ptr->attack) - JUDGE_ptr->karma / 5);
                     break;
                 case No:
                     center_screen(WIDTH, "%s\n", "It seems to frown straight at you.");
@@ -1717,7 +1716,7 @@ void JUDGE_behavior(struct Enforcer *player_ptr, struct Character *JUDGE_ptr, in
                     if (!extra_returner('+', SURGERY)) {
                         center_screen(WIDTH, "%s\n", "The operation has been complete. The figure leapt into the skies.");
                         health_healed(player_ptr->attr, JUDGE_ptr, player_ptr->alignment);
-                        health_healed(JUDGE_ptr, player_ptr->attr, JUDGE_ptr->max_health / 5);
+                        health_healed(JUDGE_ptr, player_ptr->attr, JUDGE_ptr->max_health / 4);
                     }
                     else {
                         center_screen(WIDTH, "%s\n", "The operation was a failure. The figure crawled away.");
@@ -3215,7 +3214,12 @@ void damage_dealt(struct Character *char1, struct Character *char2, int damage) 
     }
     else if (char2->buff == GUARDED || char2->buff == ENLIGHTENED) {
         if (char2->rep == '^' || char2->rep == 'V') {    /* 0 karma : full damage; damage / 3 karma : 1 / 3 damage */
-            damage = (damage - minimum(damage, 3 * char2->karma)) * (2 / 3) + damage / 3;   // damage = damage not blocked (100%)+ damage blocked (33%)
+            int damage_new = (damage - minimum(damage, 3 * char2->karma)) * (2 / 3) + damage / 3;   // damage = damage not blocked (100%)+ damage blocked (33%)
+            if (damage_new == damage / 3) {
+                char2->max_health += 2;
+                center_screen(WIDTH, "%s\n", "*Max health increase triggered*");
+            }
+            damage = damage_new;
             char2->karma -= minimum(damage, char2->karma);
         } 
         else { 
@@ -3373,7 +3377,16 @@ int ui_enforcer(struct Enforcer *enforcer_ptr) {
 }
 
 /* status : prints out the details of char1's buffs/debuffs */
-char *buff_status(struct Character *char1, struct Character *char2) {
+char *buff_status(struct Character *char1, struct Character *char2, int turn_no) {
+    static int last_turn_no;
+    int change = TRUE;
+    if (last_turn_no != turn_no) {
+        last_turn_no = turn_no;
+    }
+    else {
+        change = FALSE;
+    }
+
     char message[100] = "";
     char s_message[105] = "";
     char *final_message = NULL;
@@ -3413,7 +3426,9 @@ char *buff_status(struct Character *char1, struct Character *char2) {
             break;
         case REGEN:
             sprintf(message, "%c heals 2 hp at the start of turns.", char1->rep);
-            char1->health += minimum(char1->max_health - char1->health, 2);
+            if (change) {
+                char1->health += minimum(char1->max_health - char1->health, 2);
+            }
             break;
         case SUMMON:
             if (char1->ally_health > 0) {
@@ -3472,8 +3487,16 @@ char *buff_status(struct Character *char1, struct Character *char2) {
     return final_message;
 }
 
-char *debuff_status(struct Character *char1, struct Character *char2) {
-    static int turns_held;
+char *debuff_status(struct Character *char1, struct Character *char2, int turn_no) {
+    static int last_turn_no, turns_held, s_turns_held;
+    int change = TRUE;
+    if (last_turn_no != turn_no) {
+        last_turn_no = turn_no;
+    }
+    else {
+        change = FALSE;
+    }
+
     char message[100];
     char s_message[105];
     char *final_message;
@@ -3484,10 +3507,12 @@ char *debuff_status(struct Character *char1, struct Character *char2) {
         debuff_char(char2, char1, SICK);
         turns_held = 0;
     }
-    else if (turns_held == 5 && char1->debuff == PACIFIED) {
-        debuff_char(char2, char1, NONE);
-        char1->attack++;
-        turns_held = 0;
+    else if (s_turns_held == 5 && char1->sword_debuff == PACIFIED) {
+        s_debuff_char(char2, char1, NONE);
+        if (change) {
+            char1->attack++;
+        }
+        s_turns_held = 0;
     }
     else if (turns_held == 1 && char1->debuff == DOZING) {
         debuff_char(char2, char1, ASLEEP);
@@ -3499,7 +3524,9 @@ char *debuff_status(struct Character *char1, struct Character *char2) {
             break;
         case ACIDIFIED:
             sprintf(message, "%c takes dmg equal to %c's atk at the start of turns.", char1->rep, char2->rep);
-            char1->health -= char2->attack;
+            if (change) {
+                char1->health -= char2->attack;
+            }
             break;
         case RESTRAINED:
             sprintf(message, "%c can't act yet.", char1->rep);
@@ -3509,11 +3536,15 @@ char *debuff_status(struct Character *char1, struct Character *char2) {
             break;
         case BURNING:
             sprintf(message, "%c takes 2 flat dmg at the start of turns.", char1->rep);
-            char1->health -= 2;
+            if (change) {
+                char1->health -= 2;
+            }
             break;
         case ALMOST_SICK:
             sprintf(message, "%c will get sick next turn.", char1->rep);
-            ++turns_held;
+            if (change) {
+                ++turns_held;
+            }
             break;
         case SICK:
             sprintf(message, "%c has -3 atk (post-multiplier).", char1->rep);
@@ -3523,7 +3554,9 @@ char *debuff_status(struct Character *char1, struct Character *char2) {
             break;
         case MELTING:
             sprintf(message, "%c takes 4 flat dmg at the start of turns.", char1->rep);
-            char1->health -= 4;
+            if (change) {
+                char1->health -= 4;
+            }
             break;
         case UNLUCKY:
             sprintf(message, "%c's next roll will always be harmful to them.", char1->rep);
@@ -3547,8 +3580,10 @@ char *debuff_status(struct Character *char1, struct Character *char2) {
             strcpy(s_message, "");
             break;
         case PACIFIED:
-            sprintf(s_message, "s:%c has -1 atk.", char1->rep);
-            ++turns_held;
+            sprintf(s_message, "s:%c has -1 atk for %d turns.", char1->rep, 5 - turns_held);
+            if (change) {
+                ++turns_held;
+            }
             break;
         case DISABLED:
             sprintf(s_message, "s:%c can't use sword skills and won't gain sword meter.", char1->rep);
@@ -3672,8 +3707,6 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
     int amt;
     char item_message[100] = ""; 
 
-    printf("Using item\n");
-    sleep(3);
     set_state_vals(Controller, TRUE, FALSE, FALSE, TRUE, FALSE);
     if (user_ptr->attr->sword_buff != TEMPORAL && user_ptr->attr->sword_buff != TEMPORAL2) {
         user_ptr->attr->karma -= item_used->karma_cost;
@@ -3765,6 +3798,11 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
             }
             buff_char(user_ptr->attr, enemy_ptr, FULL);
             break;
+        case FAMINE:
+            sprintf(item_message, "%s %s", user_ptr->attr->name, "forcefully fed poisoned food.");
+            center_screen(WIDTH, "%s\n", item_message);
+            debuff_char(user_ptr->attr, enemy_ptr, ALMOST_SICK);
+            break;
         case MOON:
             sprintf(item_message, "%s %s", user_ptr->attr->name, "harnessed the power from the cosmos.");
             center_screen(WIDTH, "%s\n", item_message);
@@ -3829,7 +3867,8 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
             break;
         case DRAIN:
             center_screen(WIDTH, "%s\n", "You turn the Eye of Horus toward your foe.");
-            damage_dealt(user_ptr->attr, enemy_ptr, amt = user_ptr->attr->attack / 2);
+            amt = post_damage(user_ptr->attr, enemy_ptr, user_ptr->attr->attack);
+            damage_dealt(user_ptr->attr, enemy_ptr, user_ptr->attr->attack);
             health_healed(user_ptr->attr, enemy_ptr, amt);
             break;
         case UNCENSOR:

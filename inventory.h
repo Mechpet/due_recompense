@@ -40,11 +40,11 @@ enum effect_costs {
     DRAIN_COST = 2, 
     STRENGTH_COST = 3, 
     TEMPER_COST = 4,
+    FAMINE_COST = 5,
     ALCHEMY_COST = 5,
     MILK_COST = 5,
     FIRE_COST = 6, 
     FEAST_COST = 7,
-    FAMINE_COST = 7,
     UNCENSOR_COST = 8,
     RUSH_COST = 9,
     MOON_COST = 9, 
@@ -181,7 +181,7 @@ void shield_allocate(struct item **item_ptr) {
     if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate GUARD item.\n");
     }
-    strcpy((*item_ptr)->description, "[(Damage Taken) Karma]\nA sacred shield that's a bit battered. Reduces next (non-flat) attack to 33%-100% damage based on karma as a normal buff.\nI.e. Damage Taken = Damage - Damage fully blocked + Remaining Damage not blocked. EX: Karma = 5, incoming damage = 18, damage taken = (18 - 5 * 3) + 18 / 3 = 8.\nYou nicknamed it \"Subdititius Ancile\".");
+    strcpy((*item_ptr)->description, "[(Damage Taken) Karma]\nA sacred shield that's a bit battered. Reduces next (non-flat) attack to 33%-100% damage based on karma as a normal buff.\nI.e. Damage Taken = Damage - Damage fully blocked + Remaining Damage not blocked. EX: Karma = 5, incoming damage = 18, damage taken = (18 - 5 * 3) + 18 / 3 = 8.\nIt also increases max health by 2 per max block.\nYou nicknamed it \"Subdititius Ancile\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "|    o==O==o    |\n"
@@ -219,7 +219,7 @@ void drink_allocate(struct item **item_ptr) {
 
 void bag_allocate(struct item **item_ptr) {
     if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
-        fprintf(stderr, "FATAL: No more memory to allocate RECOVER item.\n");
+        fprintf(stderr, "FATAL: No more memory to allocate TRICK item.\n");
     }
     strcpy((*item_ptr)->description, "[10 Karma]\nAn ancient trickster's handbag.\nAttempt to steal the enemy's normal buff. If there is a normal buff, grants invulnerability on a single enemy phase as a normal buff and then after the invulnerability wears off, the normal buff is stolen.\nYou nicknamed it \"Dokkaebi's Purse\".");
     strcpy((*item_ptr)->image,
@@ -486,7 +486,7 @@ void eye_allocate(struct item **item_ptr) {
     if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate DRAIN item.\n");
     }
-    strcpy((*item_ptr)->description, "[2 karma]\nA stone carved to the shape of the Eye of Horus.\nInflict (non-flat) half attack power and heal your health for that amount (truncated).");
+    strcpy((*item_ptr)->description, "[2 karma]\nA stone carved to the shape of the Eye of Horus.\nInflict (non-flat) attack power and heal your health for that amount.");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "|* * * ___ * * *|\n"

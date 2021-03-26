@@ -45,7 +45,7 @@ enum karma_ids {
     KID = 34,
     FRAUDSTER = 39,
     JUDGE = 101,
-    COP = 4000
+    COP = 400
 };
 
 // This structure will determine an enemy's ending/fate at the end of the game
