@@ -1,8 +1,8 @@
 /* fate.h
 Array of structures that describe what the player's outcome was */
 #include <stdio.h>
-#define NUM_ENEMIES 17  // Total # of implemented enemies in the game
-#define NUM_PUPPETS 15
+#define NUM_ENEMIES 18  // Total # of implemented enemies in the game
+#define NUM_PUPPETS 15 
 #define MAX_EXTRA 3 // Maximum extra attributes an enemy can have to describe their fate
 #define FALSE 0 
 #define TRUE 1
@@ -15,16 +15,19 @@ enum fate_numbers {
     THIRD_PARTY // Didn't talk to the enemy and the enemy lost against a third-party 
 };
 
-enum extra_numbers {NONE, MARKED, SURGERY, SYNTHOL, ALERTED, RETURNING, TRAILED, TREATED, GAMBLED, COMPETED, TRAINED, FOUGHT, HALTED, DUEL, WON};
+enum extra_numbers {NONE, MARKED, SURGERY, ALERTED, RETURNING, TRAILED, TREATED, HUNTED, KILLED, COMPETED, TRAINED, FOUGHT, HALTED, DUEL, WON, NOT_ABSORBED};
 /* 
 Assigned extra attributes=
 KID:        MARKED
-DOC:        SURGERY or one of (SYNTHOL, NONE) and one of (ALERTED, NONE)
+DOC:        SURGERY or one of (ALERTED, NONE)
 QUEEN:      RETURNING
 ARSONIST:   TRAILED
-LUNCHLADY:  TREATED
-FRAUDSTER:  GAMBLED
-ASSASSIN:   COMPETED and one of (TRAINED, FOUGHT, HALTED, DUEL, NONE)
+LUNCHLADY:  TREATED, HUNTED
+FRAUDSTER:  KILLED
+BAT:        HUNTED
+ASSASSIN:   COMPETED, WON, and one of (TRAINED, FOUGHT, HALTED, DUEL, NONE)
+COP:        NOT_ABSORBED
+USER:       KILLED
 */
 
 // Measure of how "evil" or "just" an enemy is; purposefully vague and subjective
@@ -60,6 +63,9 @@ void fate_store(char rep, int their_fate);
 int fate_returner(char rep);
 int extra_returner(char rep, int extra_to_locate);
 int total_fate(int fate_number);
+unsigned int is_alive(char rep);
+unsigned int is_active(char rep);
+unsigned int is_arrested(char rep);
 
 /* fate_initialize : 
  * Arguments: void 
@@ -73,16 +79,17 @@ void fate_initialize(void) {
     all_fates[4].rep = '$';
     all_fates[5].rep = '*';
     all_fates[6].rep = 'L';
-    all_fates[7].rep = 'C';
-    all_fates[8].rep = '?';
+    all_fates[7].rep = '?';
+    all_fates[8].rep = 'C';
     all_fates[9].rep = '@';
     all_fates[10].rep = '\\';
     all_fates[11].rep = '/';
-    all_fates[12].rep = '#';
-    all_fates[13].rep = '&';
-    all_fates[14].rep = '!';
+    all_fates[12].rep = '!';
+    all_fates[13].rep = '#';
+    all_fates[14].rep = '&';
     all_fates[15].rep = 'V';
     all_fates[16].rep = 'X';
+    all_fates[17].rep = '^';
     
     int i, t;
     for (i = 0; i < NUM_ENEMIES; ++i) {
@@ -116,10 +123,13 @@ void extra_store(char rep, int their_extra) {
     for (i = 0; i < NUM_ENEMIES && all_fates[i].rep != rep; ++i) {   // Iterate through fates until matching representation
         ;
     }
-    for (t = 0; all_fates[i].extra[t]; ++t) {   // Iterate through extra numbers 
+    for (t = 0; t < MAX_EXTRA && all_fates[i].extra[t] && all_fates[i].extra[t] != their_extra; ++t) {   // Iterate through extra numbers 
         ;
     }
-    if (t < MAX_EXTRA) { // If there is an empty extra number (== NONE), function decides to store the extra number argument
+    if (all_fates[i].extra[t] == their_extra) {
+        return;
+    }
+    else if (t < MAX_EXTRA) { // If there is an empty extra number (== NONE), function decides to store the extra number argument
         all_fates[i].extra[t] = their_extra;
     }
 }
@@ -166,4 +176,25 @@ int total_fate(int fate_number) {
         }
     }
     return num_with_fate_no;
+}
+
+unsigned int is_active(char rep) {
+    if (fate_returner(rep) == NEVER_MET || fate_returner(rep) == SPARED) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+unsigned int is_alive(char rep) {
+    if (is_active(rep) || fate_returner(rep) == VICTORIOUS) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+unsigned int is_arrested(char rep) {
+    if (fate_returner(rep) == CONVICTED || fate_returner(rep) == THIRD_PARTY) {
+        return TRUE;
+    }
+    return FALSE;
 }

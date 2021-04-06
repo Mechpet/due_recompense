@@ -30,25 +30,28 @@ void spin_chamber(struct shootoff *roulette, int user);
 /* duel_enemy : run an instance of Russian Roulette */
 int duel_enemy(void) {
     roulette = init_roulette();
-    int result;
     while (1) {
         if (roulette->first_shooter == ENEMY) {
             if (their_turn_RR(roulette)) {
                 free(roulette);
+                roulette = NULL;
                 return ALIVE;
             }
             if (your_turn_RR(roulette)) {
                 free(roulette);
+                roulette = NULL;
                 return DEAD;
             }
         }
         else {
             if (your_turn_RR(roulette)) {
                 free(roulette);
+                roulette = NULL;
                 return DEAD;
             }
             if (their_turn_RR(roulette)) {
                 free(roulette);
+                roulette = NULL;
                 return ALIVE;
             }
         }
@@ -58,7 +61,7 @@ int duel_enemy(void) {
 /* their_turn_RR : plays the opponent's turn (has pseudo-random behavior) */
 int their_turn_RR(struct shootoff *roulette) {
     if (roulette->their_spin) { // Consider the option of spinning chamber
-        if ((rand() % 6) <= roulette->chamber_no) { // As more bullets are shot w/o spinning, increases chance of spinning
+        if ((rand() % 5) < roulette->chamber_no) { // As more bullets are shot w/o spinning, increases chance of spinning
             spin_chamber(roulette, ENEMY);
             return their_turn_RR(roulette);
         }
@@ -82,6 +85,7 @@ int your_turn_RR(struct shootoff *roulette) {
             return your_turn_RR(roulette);
             break;
     }
+    return shoot_gun(roulette, YOU);;
 }
 
 /* shoot_gun : event where player shoots the gun - results in loss or continuation of the game */
@@ -89,6 +93,8 @@ int shoot_gun(struct shootoff *roulette, int user) {
     printf("%s pulled the trigger...\n", (user == ENEMY) ? "They" : "You");
     sleep(3);
     if (roulette->chamber[roulette->chamber_no]) {
+        play_sound_fx("Music\\Revolver_shot.wav");
+
         if (user == ENEMY) {
             printf("They died.\n");
         }
@@ -128,6 +134,7 @@ void reset_chamber(struct shootoff *roulette) {
 
 /* spin_chamber : takes a shootoff and consumes the player's spin amount; afterward, reset the chamber */
 void spin_chamber(struct shootoff *roulette, int user) {
+    play_sound_fx("Music\\Spin.wav");
     printf("%s spun the chamber!\n", (user == ENEMY) ? "They" : "You");
     sleep(3);
     if (user == ENEMY) {

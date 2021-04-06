@@ -18,11 +18,15 @@ int choose_rps(void) {
     switch (tolower(c)) {
         case 'r':
             return 0;
+            break;
         case 'p':
             return 1;
+            break;
         case 's':
             return 2;
+            break;
     }
+    return 0;
 }
 
 int choose_rps_random(void) {
@@ -89,7 +93,7 @@ int shoot(void) {
         {rock_a, paper_a, scissors_a},
         {rock_b, paper_b, scissors_b},
     };
-    int player_choice = choose_rps(), opponent_choice = choose_rps_random(), i, t;
+    int player_choice = choose_rps(), opponent_choice = choose_rps_random(), i;
     for (i = 0; i < 7; ++i)
         printf("%s%s", rock_a[i], rock_b[i]);
     sleep(1);

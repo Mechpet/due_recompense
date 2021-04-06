@@ -53,7 +53,7 @@ int play_opponent(int difficulty, char rep);
  * Implementation: Infinite loop until a terminating condition has been met
  * Purpose: Initialize the game and call other helper functions to advance the game */
 int play_opponent(int difficulty, char rep) {
-    int i, t, result;
+    int i, result;
     if ((tictac = malloc(sizeof(*tictac))) == NULL) {
         fprintf(stderr, "FATAL: No more memory for Tic-tac-toe.\n");
     }
@@ -107,7 +107,9 @@ int play_opponent(int difficulty, char rep) {
     printf("FINAL BOARD:\n");
     layout(tictac); // Display the state of the tic-tac-toe board game after the last turn
     free(tictac->board);
+    tictac->board = NULL;
     free(tictac);
+    tictac = NULL;
     if (result == 'O') {    // Check whether the player won by comparing the result to the player's representation
         printf("O wins!\n");
         sleep(3);
@@ -286,9 +288,10 @@ int row_within(int opposing[5], int allied[5]) {
 
 /* column_within : find the space that needs to be filled to not lose to a vertical */
 int column_within(int opposing[5], int allied[5]) {
-    int columns[3][2] = {{INACTIVE, INACTIVE}, {INACTIVE, INACTIVE}, {INACTIVE, INACTIVE}}, i, t, target = INACTIVE, vertical;
+    int columns[3][2] = {{INACTIVE, INACTIVE}, {INACTIVE, INACTIVE}, {INACTIVE, INACTIVE}}, i, target = INACTIVE, vertical;
     for (i = 0; i < 5 && opposing[i] != INACTIVE; ++i) {    /* columns[row][column] filled */
-        columns[vertical = opposing[i] % 3][(columns[vertical][0] == INACTIVE) ? 0 : 1] = opposing[i];
+        vertical = opposing[i] % 3;
+        columns[vertical][(columns[vertical][0] == INACTIVE) ? 0 : 1] = opposing[i];
     }
     for (i = 0; i < 3 && target == INACTIVE; ++i) {
         if (columns[i][1] != INACTIVE) {    /* if two are in the same column */
@@ -309,7 +312,7 @@ int column_within(int opposing[5], int allied[5]) {
 }
 
 int diagonal_within(int opposing[5], int allied[5]) {
-    int i, t, arr, center = 0, target = INACTIVE, cond1, cond2;
+    int i, arr, center = 0, target = INACTIVE;
     int diagonals[2][2] = {{INACTIVE, INACTIVE}, {INACTIVE, INACTIVE}};
     for (i = 0; i < 5; ++i) {
         if (opposing[i] == 4) {
@@ -317,7 +320,8 @@ int diagonal_within(int opposing[5], int allied[5]) {
             continue;
         }
         if (opposing[i] % 2 == 0) {
-            diagonals[arr = (opposing[i] % 4) ? 1 : 0][diagonals[arr][0] == INACTIVE ? 0 : 1] = opposing[i]; 
+            arr = (opposing[i] % 4) ? 1 : 0;
+            diagonals[arr][diagonals[arr][0] == INACTIVE ? 0 : 1] = opposing[i]; 
         }
     }
     if (center || diagonals[0][1] != INACTIVE || diagonals[1][1] != INACTIVE) {
@@ -373,7 +377,7 @@ int counter_col_ally(int target_column, int allied[5]) {
 }
 
 void ally_enemy(int opposing[5], int allied[5], char rep) {
-    int i, t, v, target;
+    int i, t, v;
     for (i = 0; i < 5; i++) {
         opposing[i] = INACTIVE;
         allied[i] = INACTIVE;
@@ -392,7 +396,7 @@ void ally_enemy(int opposing[5], int allied[5], char rep) {
 void opponent_behavior_intelligent(struct Game *tictac) {
     int enemy = (tictac->turn_no % 2) ? 'O' : 'X';
     int ally = (enemy == 'O') ? 'X' : 'O';
-    int move, switched_scenario = (int) (tictac->scenario * 10000);
+    int switched_scenario = (int) (tictac->scenario * 10000);
     while (switched_scenario % 10) {
         ++switched_scenario;
     }
@@ -834,7 +838,6 @@ void opponent_behavior_intelligent(struct Game *tictac) {
                 break;
         }
     }
-    printf("%d\n", switched_scenario);
     ++tictac->turn_no;
 }
 
@@ -876,10 +879,8 @@ void opponent_behavior_standard(struct Game *tictac) {
 
 /* reckless : only does random behavior */
 void opponent_behavior_reckless(struct Game *tictac) {
-    int i, t, v, target, spot, rep = (tictac->turn_no % 2) ? 'X' : 'O';
+    int target, spot, rep = (tictac->turn_no % 2) ? 'X' : 'O';
     int foe = (rep == 'X') ? 'O' : 'X';
-    int opposing[5] = {INACTIVE, INACTIVE, INACTIVE, INACTIVE, INACTIVE};
-    int allied[5] = {INACTIVE, INACTIVE, INACTIVE, INACTIVE, INACTIVE};
     printf("Your opponent is playing...\n");
     sleep(3);
     while ((spot = *tictac->board[target = rand() % 9]) == foe || spot == rep) {

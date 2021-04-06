@@ -7,6 +7,15 @@ Functions that implement the inventory system. */
 #include <stdlib.h>
 #include "controller.h"
 
+#define GOLEM_HP 15
+#define GOLEM_ATK 3
+
+#define GANGSTERS_HP 12
+#define GANGSTERS_ATK 3
+
+#define WHITE_KNIGHT_HP 9
+#define WHITE_KNIGHT_ATK 1
+
 // Numbers that correspond to each obtainable item in the game (acts as identifiers)
 enum item_effects {
     DAMAGE, 
@@ -15,6 +24,7 @@ enum item_effects {
     GUARD, 
     RECOVER, 
     TRICK,
+    SHOP,
     FEAST, 
     FAMINE,
     FIRE, 
@@ -25,11 +35,13 @@ enum item_effects {
     GOLEM, 
     RANG,
     BULLET,
+    PILLS,
     ALCHEMY,
     DRAIN,
     UNCENSOR,
     MILK,
     TRAP,
+    COINS,
     DUE_RECOMPENSE,
 };
 
@@ -57,10 +69,12 @@ enum effect_costs {
 enum effect_uses {
     INFINITE = -1,
     DUE_RECOMPENSE_USES = 1,
+    PILLS_USES = 2,
     RANG_USES = 3,
     MILK_USES = 3,
+    COINS_USES = 5,
     BULLET_USES = 6,
-    RECOVER_USES = 10,
+    RECOVER_USES = 10
 };
 
 // Fully describes an item in the inventory 
@@ -81,6 +95,7 @@ void pen_allocate(struct item **item_ptr);
 
 /* OFFENSIVE = Items that boost damaging capabilities */
 void boots_allocate(struct item **item_ptr);
+void life_essence_allocate(struct item **item_ptr);
 void temperedshard_allocate(struct item **item_ptr);
 void bullet_allocate(struct item **item_ptr);
 
@@ -95,12 +110,17 @@ void doll_allocate(struct item **item_ptr);
 void eye_allocate(struct item **item_ptr);
 
 /* TACTICAL = Unique items that fit none or multiple of the other categories */
+void money_allocate(struct item **item_ptr);
 void bag_allocate(struct item **item_ptr);
+void shop_allocate(struct item **item_ptr);
 void strengthshard_allocate(struct item **item_ptr);
 void rang_allocate(struct item **item_ptr);
 void circle_allocate(struct item **item_ptr);
 void sword_allocate(struct item **item_ptr);
 void milk_allocate(struct item **item_ptr);
+
+int return_balance(struct item **first_item_ptr);
+void update_balance(struct item **first_item_ptr, int balance_change);
 
 void add_item(struct item **first_item_ptr, int item_id);
 void allocate_item(struct item **empty_item_slot, int item_id);
@@ -221,7 +241,7 @@ void bag_allocate(struct item **item_ptr) {
     if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate TRICK item.\n");
     }
-    strcpy((*item_ptr)->description, "[10 Karma]\nAn ancient trickster's handbag.\nAttempt to steal the enemy's normal buff. If there is a normal buff, grants invulnerability on a single enemy phase as a normal buff and then after the invulnerability wears off, the normal buff is stolen.\nYou nicknamed it \"Dokkaebi's Purse\".");
+    strcpy((*item_ptr)->description, "[10 Karma]\nAn ancient trickster's handbag.\nAttempt to steal the enemy's normal buff.\nIf there is a normal buff, grants invulnerability on a single enemy phase as a normal buff and then after the invulnerability wears off, the normal buff is stolen.\nAlso, obtain 2 coins.\nYou nicknamed it \"Dokkaebi's Purse\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "|//  _______  \\\\|\n"
@@ -235,6 +255,27 @@ void bag_allocate(struct item **item_ptr) {
     "| L___________J |\n"
     "|_______________|");
     (*item_ptr)->effect = TRICK, (*item_ptr)->karma_cost = TRICK_COST, (*item_ptr)->uses = INFINITE, (*item_ptr)->next_item = NULL;
+}
+
+void life_essence_allocate(struct item **item_ptr) {
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
+        fprintf(stderr, "FATAL: No more memory to allocate PILLS item.\n");
+    }
+    strcpy((*item_ptr)->description, "A jar full of infused life essence. While dangerous to consume, enforcers can handle the substance better than others.\nGrants a normal buff that doubles (non-flat) attacks' power and halves (non-flat) incoming damage.");
+    strcpy((*item_ptr)->image,
+    " _______________\n"
+    "|               |\n"
+    "|    _______    |\n"
+    "|   |_     _|   |\n"
+    "|  [         ]  |\n"
+    "|   \\VVVVVVV/   |\n"
+    "|   ( =(E)= )   |\n"
+    "|    |^^^^^|    |\n"
+    "|  __/##xxx\\__  |\n"
+    "| / [_______] \\ |\n"
+    "|/_____________\\|");
+    
+    (*item_ptr)->effect = PILLS, (*item_ptr)->karma_cost = FREE, (*item_ptr)->uses = PILLS_USES, (*item_ptr)->next_item = NULL;
 }
 
 void arrow_allocate(struct item **item_ptr) {
@@ -341,7 +382,7 @@ void temperedshard_allocate(struct item **item_ptr) {
     if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate TEMPER item.\n");
     }
-    strcpy((*item_ptr)->description, "[3 Karma]\nAn asteroid shard. Increases everybody's attack power by 1 only for the duration of the battle.\nYou nicknamed it \"11 Fortuna\".");
+    strcpy((*item_ptr)->description, "[3 Karma]\nAn asteroid shard. Increases everybody's attack power by 1 for the duration of the battle only. Resummoned allies don't receive the effect (current ones do).\nYou nicknamed it \"11 Fortuna\".");
     strcpy((*item_ptr)->image,
     " _______________\n"
     "|      *      * |\n"
@@ -359,7 +400,7 @@ void temperedshard_allocate(struct item **item_ptr) {
 
 void strengthshard_allocate(struct item **item_ptr) {
     if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
-        fprintf(stderr, "FATAL: No more memory to allocate TEMPER item.\n");
+        fprintf(stderr, "FATAL: No more memory to allocate STRENGTH item.\n");
     }
     strcpy((*item_ptr)->description, "[4 Karma]\nAn asteroid shard. Dispels everyone's normal buff and normal debuff.\nYou nicknamed it \"14 Fortuna\".");
     strcpy((*item_ptr)->image,
@@ -522,6 +563,27 @@ void pen_allocate(struct item **item_ptr) {
     (*item_ptr)->effect = UNCENSOR, (*item_ptr)->karma_cost = UNCENSOR_COST, (*item_ptr)->uses = INFINITE, (*item_ptr)->next_item = NULL;
 }
 
+void money_allocate(struct item **item_ptr) {
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
+        fprintf(stderr, "FATAL: No more memory to allocate COINS item.\n");
+    }
+    strcpy((*item_ptr)->description, "The least valuable coin available in the modern world. A single coin is equivalent to a week's worth of food. Is a jumble of circuits and data.\nSplit a coin with a sword to charge said sword by one and reduce sword cooldowns by 2.");
+    strcpy((*item_ptr)->image,
+    " _______________\n"
+    "|    _______    |\n"
+    "|   /  |-|  \\   |\n"
+    "|  /  | = |  \\  |\n"
+    "| |       .   | |\n"
+    "| |_- [001]'-_| |\n"
+    "| |__ * =   __| |\n"
+    "|    \\  |  /    |\n"
+    "|    (_|_|_)    |\n"
+    "| X -- . / ---..|\n"
+    "|_______________|");
+    (*item_ptr)->effect = COINS, (*item_ptr)->karma_cost = FREE, (*item_ptr)->uses = COINS_USES, (*item_ptr)->next_item = NULL;
+
+}
+
 void sword_allocate(struct item **item_ptr) {
     if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate DUE_RECOMPENSE item.\n");
@@ -611,6 +673,9 @@ void allocate_item(struct item **empty_item_ptr, int item_id) {
         case BULLET:
             bullet_allocate(empty_item_ptr);
             break;
+        case PILLS:
+            life_essence_allocate(empty_item_ptr);
+            break;
         case MILK:
             milk_allocate(empty_item_ptr);
             break;
@@ -623,6 +688,9 @@ void allocate_item(struct item **empty_item_ptr, int item_id) {
         case ALCHEMY:
             circle_allocate(empty_item_ptr);
             break;
+        case COINS:
+            money_allocate(empty_item_ptr);
+            break;
         case DUE_RECOMPENSE:
             sword_allocate(empty_item_ptr);
             break;
@@ -631,6 +699,7 @@ void allocate_item(struct item **empty_item_ptr, int item_id) {
 
 void free_item(struct item **item_ptr) {
     free(*item_ptr);
+    *item_ptr = NULL;
 
     return;
 }
@@ -644,4 +713,12 @@ struct item *has_item(struct item **first_item_ptr, int item_id) {
         curr_item = curr_item->next_item;
     }
     return NULL;
+}
+
+int return_balance(struct item **first_item_ptr) {
+    return has_item(first_item_ptr, COINS)->uses;
+}
+
+void update_balance(struct item **first_item_ptr, int balance_change) {
+    has_item(first_item_ptr, COINS)->uses += balance_change;
 }

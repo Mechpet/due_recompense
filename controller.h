@@ -6,6 +6,7 @@ The result is the player/user types in their input and submits via 'enter' key. 
 #include <ctype.h>
 #include <conio.h>
 #include <string.h>
+#include "general.h"
 
 // Shields from stacking this header file in other files
 #ifndef CONTROLLER_H
@@ -21,6 +22,7 @@ enum bindings {
     Start       = 32, /* ' ' */
     Help        = 63, /* '?' */
     RR          = 82, /* 'R' */
+    Shop        = 83, /* 'S' */
     Left        = 97, /* 'a' */
     Cancel      = 99, /* 'c' */
     Defense     = 99, /* 'c' */
@@ -49,7 +51,7 @@ struct state_vals {
     unsigned int is_title   : 1;
     unsigned int is_map     : 1;
     unsigned int is_battle  : 1;
-    unsigned int is_invent  : 1;
+    unsigned int is_fate  : 1;
 };
 
 // Records the player's given input and game's current state to see what actions are legal
@@ -59,11 +61,27 @@ struct controller {
 } *Controller;
 
 /* getaction : 
- * Arguments: in is of the controller structure (will be a global variable)
+ * Arguments: in - is of the controller structure (will be a global variable)
  * Implementation: Attempt to get defined inputs through checks; returns meaningful value if all tests are passed
  * Purpose: receive standard input if in the position to do so (based on player_state), then return the decided input */
 int getaction(struct controller *in) {
     char line[BUFFER_SIZE];
+    Mix_Chunk *map_wav = NULL;
+    if (!Mix_Playing(-1)) {
+        if (in->player_state.is_map && in->player_state.is_battle) {
+            if ((map_wav = Mix_LoadWAV("Music\\Map_island.wav")) == NULL) {
+                fprintf(stderr, "Could not load map wav file.\n");
+            }
+        }
+        else {
+            if ((map_wav = Mix_LoadWAV("Music\\Map_normal.wav")) == NULL) {
+                fprintf(stderr, "Could not load map wav file.\n");
+            }
+        }
+        if (Mix_FadeInChannel(-1, map_wav, -1, 1000) == -1) {
+            fprintf(stderr, "Could not play map wav file.\n");
+        }
+    }
     if (in->player_state.is_waiting || _kbhit()) {  // If player is supposed to be waiting or the program is in sleep() && input to the console has been detected
         _getch();   // Discards input typed while in sleep()
         return Placeholder;
@@ -82,7 +100,7 @@ int getaction(struct controller *in) {
 }
 
 /* getnumber:
- * Arguments: void
+ * Arguments: void - nothing
  * Implementation: Attempts to get defined inputs through checks; returns integer that user input if all tests are passed
  * Purpose: receive standard input when called (meant for receiving a number), then return the integer typed if it's an int */
 int getnumber(void) {
@@ -105,7 +123,7 @@ int getnumber(void) {
 }
 
 /* initialize_controller : 
- * Arguments: in is of the controller structure (will be a global variable)
+ * Arguments: in - is of the controller structure (will be a global variable)
  * Implementation: Dynamic memory allocation
  * Purpose: allocates memory for the controller structure */
 struct controller *initialize_controller(struct controller *in) {
@@ -116,16 +134,16 @@ struct controller *initialize_controller(struct controller *in) {
 }
 
 /* set_state_vals : 
- * Arguments: in is of the controller structure (will be a global variable)
- *            waiting, title, map, battle, invent are the unsigned integers to set to the player state
+ * Arguments: in - is of the controller structure (will be a global variable)
+ *            waiting, title, map, battle, invent - are the unsigned integers to set to the player state
  * Implementation: Assign the values
  * Purpose: sets the state values in the controller */
-void set_state_vals(struct controller *in, unsigned int waiting, unsigned int title, unsigned int map, unsigned int battle, unsigned int invent) {
-    in->player_state.is_waiting = waiting, in->player_state.is_title = title, in->player_state.is_map = map, in->player_state.is_battle = battle, in->player_state.is_invent = invent;
+void set_state_vals(struct controller *in, unsigned int waiting, unsigned int title, unsigned int map, unsigned int battle, unsigned int fate) {
+    in->player_state.is_waiting = waiting, in->player_state.is_title = title, in->player_state.is_map = map, in->player_state.is_battle = battle, in->player_state.is_fate = fate;
 }
 
 /* quit : 
- * Arguments: void
+ * Arguments: void - nothing
  * Implementation: Clear the screen and display the ASCII art 
  * Purpose: clears the screen, replaces it with the "FIN" screen */
 void quit(void) {
@@ -146,7 +164,7 @@ void quit(void) {
 }
 
 /* player_death : 
- * Arguments: void
+ * Arguments: void - nothing
  * Implementation: Clear the screen and display the ASCII art
  * Purpose: clears the screen, replaces it with the "DEATH" screen */
 void player_death(void) {
@@ -162,8 +180,7 @@ void player_death(void) {
     "________________|__\\|/__|________________\n"
     "             \"Here lies you\"";
     puts(die_buffer);
-    sleep(15);
-    exit(EXIT_SUCCESS);
+    sleep(5);
 
 }
 #endif /* ends ifndef CONTROLLER_H */

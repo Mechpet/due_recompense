@@ -14,11 +14,7 @@ Also implements the fundamentals of the battle system.
 #include "tictactoe.h"
 #include "russian_roulette.h"
 
-#define SDL_MAIN_HANDLED 1
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_mixer.h>
-
-#define INIT_HEALTH 45  // Default starting maximum health of player
+#define INIT_HEALTH 40  // Default starting maximum health of player
 #define INIT_ATTACK 2   // Default starting attack of player
 #define MAX_ENEMIES 3   // Maximum number of enemies in a map 
 #define INIT_KARMA 50  // Default starting karma of player
@@ -47,7 +43,7 @@ enum base_hp {
     BAT_b_hp = 33,
     ASSASSIN_b_hp = 35,
     POLITICIAN_b_hp = 36,
-    COP_b_hp = 60,
+    COP_b_hp = 55,
     JUDGE_b_hp = 66
 };
 
@@ -177,7 +173,7 @@ struct Character {
     void (*behavior) (struct Enforcer *, struct Character *, int);   // Points to function that defines the Character's behavior
 };
 
-int skip_scene = FALSE; // Tracks whether the player has chosen to skip a scene
+int skip_scene = FALSE; // Tracks whether the player has chosen to skip scene(s)
 void determine_stats(void);
 
 struct Enforcer *initialize_player(void);
@@ -224,6 +220,8 @@ void ASSASSIN_behavior(struct Enforcer *player_ptr, struct Character *ASSASSIN_p
 void HACKER_behavior(struct Enforcer *player_ptr, struct Character *HACKER_ptr, int turn_no);
 void COP_behavior(struct Enforcer *player_ptr, struct Enforcer *COP_ptr, int turn_no);
 void JUDGE_behavior(struct Enforcer *player_ptr, struct Character *JUDGE_ptr, int turn_no);
+
+void ending(int alignment);
 
 // Determine the initial attack and health values of each character, taking into account the difficulty multiplier 
 void determine_stats(void) {
@@ -345,10 +343,9 @@ void DOC_behavior(struct Enforcer *player_ptr, struct Character *DOC_ptr, int tu
             break;
         case 3:
             if (!operation_commence && DOC_ptr->health > 10) {
-                center_screen(WIDTH, "%s\n", "Hayato injects some amber fluid labeled 'Synthol' into his arms.");
+                center_screen(WIDTH, "%s\n", "Hayato injects some amber fluid labeled 'synthol' into his arms.");
                 damage_dealt(DOC_ptr, DOC_ptr, 5);
                 injected = TRUE;
-                extra_store('+', SYNTHOL);
             }
             else if (operation_commence) {
                 center_screen(WIDTH, "%s\n", "Hayato performs live surgery on you at a surprising pace!");
@@ -384,6 +381,7 @@ void QUEEN_behavior(struct Enforcer *player_ptr, struct Character *QUEEN_ptr, in
         case 1:
             if (turn_no == 1) {
                 center_screen(WIDTH, "%s\n", "Lille opens her leather suitcase, revealing an army of fire ants!");
+                play_sound_fx("Music\\Ants.wav");
                 sleep(1);
             }
             center_screen(WIDTH, "%s\n", "Fire ants bite into you wherever they could!");
@@ -436,6 +434,7 @@ void LORD_behavior(struct Enforcer *player_ptr, struct Character *LORD_ptr, int 
             }
             break;
         case 3:
+            play_sound_fx("Music\\Restrain.wav");
             center_screen(WIDTH, "%s\n", "Severino strikes with his elbow and holds you in a choke!");
             damage_dealt(LORD_ptr, player_ptr->attr, LORD_ptr->attack);
             debuff_char(LORD_ptr, player_ptr->attr, RESTRAINED);
@@ -535,7 +534,7 @@ void LUNCHLADY_behavior(struct Enforcer *player_ptr, struct Character *LUNCHLADY
     if (served == TRUE && player_ptr->attr->debuff != ALMOST_SICK && player_ptr->attr->debuff != SICK) {
         served = FALSE;
     }
-    if (player_ptr->attr->debuff == ALMOST_SICK || player_ptr->attr->debuff == SICK && player_ptr->attr->buff != GUARDED && player_ptr->attr->buff != INVULNERABLE) {
+    if (player_ptr->attr->debuff == ALMOST_SICK || (player_ptr->attr->debuff == SICK && player_ptr->attr->buff != GUARDED && player_ptr->attr->buff != INVULNERABLE)) {
         center_screen(WIDTH, "%s\n", "*You're incredibly full after that meal*");
         sleep(1);
         buff_char(player_ptr->attr, LUNCHLADY_ptr, FULL);
@@ -553,6 +552,7 @@ void LUNCHLADY_behavior(struct Enforcer *player_ptr, struct Character *LUNCHLADY
         case 1:
             if (served == FALSE) {
                 center_screen(WIDTH, "%s\n", "Lexa asks you whether you want to eat together, to which you say...");
+                set_state_vals(Controller, FALSE, FALSE, FALSE, TRUE, FALSE);
                 while ((keystr = getaction(Controller)) != _EOF && keystr != Yes && keystr != No) {
                     ;
                 }
@@ -756,10 +756,9 @@ void FRAUDSTER_behavior(struct Enforcer *player_ptr, struct Character *FRAUDSTER
 
 /* NAPPER_behavior : Hard-hitting & has trump cards */
 void NAPPER_behavior(struct Enforcer *player_ptr, struct Character *NAPPER_ptr, int turn_no) {
-    char message[35];
+    char message[50];
     if (NAPPER_ptr->buff == SUMMON) {
         if (NAPPER_ptr->ally_health < 1) {
-            NAPPER_ptr->ally_attack = 0;
             buff_char(NAPPER_ptr, player_ptr->attr, NONE);
             sprintf(message, "*All three gangsters are knocked out cold*");
         }
@@ -810,8 +809,6 @@ void NAPPER_behavior(struct Enforcer *player_ptr, struct Character *NAPPER_ptr, 
             else if (turn_no == 5) {
                 center_screen(WIDTH, "%s\n", "*Three gangsters emerged and joined the fight!*");
                 buff_char(NAPPER_ptr, player_ptr->attr, SUMMON);
-                NAPPER_ptr->ally_health = 12;
-                NAPPER_ptr->ally_attack = 3;
                 sleep(2);
             }
             else {
@@ -973,6 +970,7 @@ void FERAL_behavior(struct Enforcer *player_ptr, struct Character *FERAL_ptr, in
             debuff_char(FERAL_ptr, player_ptr->attr, DOUBLEOPEN);
             break;
         case 1:
+            play_sound_fx("Music\\Screech.wav");
             center_screen(WIDTH, "%s\n", "Chike went on all fours.");
             buff_char(FERAL_ptr, player_ptr->attr, CONFIDENT);
             sleep(1);
@@ -1142,8 +1140,6 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
                         case PROPAGANDIC:
                             center_screen(WIDTH, "%s\n", "Faiza is manipulation incarnate");
                             buff_char(ARTIST_ptr, player_ptr->attr, SUMMON);
-                            ARTIST_ptr->ally_health = 9;
-                            ARTIST_ptr->ally_attack = 1;
                             break;
                         default:
                             center_screen(WIDTH, "%s\n", "Faiza is inspiration incarnate.");
@@ -1190,7 +1186,7 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
                         case REALISTIC:
                             center_screen(WIDTH, "%s\n", "Faiza is pressure incarnate.");
                             if (player_ptr->attr->buff == SUMMON) {
-                                damage_dealt(ARTIST_ptr, player_ptr->attr, 15);
+                                damage_dealt(ARTIST_ptr, player_ptr->attr, GOLEM_HP);
                             }
                             break;
                         case INSPIRATIONAL:
@@ -1209,8 +1205,6 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
                             }
                             else {
                                 buff_char(ARTIST_ptr, player_ptr->attr, SUMMON);
-                                ARTIST_ptr->ally_health = 9;
-                                ARTIST_ptr->ally_attack = 1;
                             }
                             break;
                         case GRAPHIC:
@@ -1226,8 +1220,6 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
                             }
                             else {
                                 buff_char(ARTIST_ptr, player_ptr->attr, SUMMON);
-                                ARTIST_ptr->ally_health = 9;
-                                ARTIST_ptr->ally_attack = 1;
                             }
                             break;
                     }
@@ -1441,7 +1433,7 @@ void COP_behavior(struct Enforcer *player_ptr, struct Enforcer *COP_ptr, int tur
     // "Random": Randomly choose 1 behavior from "best" until a result is possible
     
     // Decide whether to pick "best" or "random" behavior
-    int random_int = rand(), scaling = COP_ARRESTS + total_fate(THIRD_PARTY), item_used = FALSE;
+    int scaling = COP_ARRESTS + total_fate(THIRD_PARTY), item_used = FALSE;
     // "Best" behavior
     if (1) {
         // Able to defeat by sword attack skill
@@ -1458,6 +1450,7 @@ void COP_behavior(struct Enforcer *player_ptr, struct Enforcer *COP_ptr, int tur
         }
         // Able to defeat by normal attack
         else if (post_damage(COP_ptr->attr, player_ptr->attr, COP_ptr->attr->attack) >= player_ptr->attr->health) {
+            play_sound_fx("Music\\Thud.wav");
             damage_dealt(COP_ptr->attr, player_ptr->attr, COP_ptr->attr->attack);
             increment_sword(COP_ptr);
             if (COP_ptr->attr->sword_buff == DEMONIC) {
@@ -1501,6 +1494,7 @@ void COP_behavior(struct Enforcer *player_ptr, struct Enforcer *COP_ptr, int tur
                 player_ptr->attr->health -= scaling;
             }
             else if (COP_ptr->sword_points != MAX_SWORD) {
+                play_sound_fx("Music\\Thud.wav");
                 damage_dealt(COP_ptr->attr, player_ptr->attr, COP_ptr->attr->attack);
                 increment_sword(COP_ptr);
                 if (COP_ptr->attr->sword_buff == DEMONIC) {
@@ -1526,6 +1520,7 @@ void COP_behavior(struct Enforcer *player_ptr, struct Enforcer *COP_ptr, int tur
                     item_used = TRUE;
                 }
                 else {
+                    play_sound_fx("Music\\Thud.wav");
                     damage_dealt(COP_ptr->attr, player_ptr->attr, COP_ptr->attr->attack);
                     increment_sword(COP_ptr);
                     if (COP_ptr->attr->sword_buff == DEMONIC) {
@@ -1605,7 +1600,6 @@ void JUDGE_behavior(struct Enforcer *player_ptr, struct Character *JUDGE_ptr, in
         center_screen(WIDTH, "%s\n", "A grey storm wears away at you.");
         player_ptr->attr->health--;
     }
-    char message[100];
     /* JUDGE behavior */
     switch (turn_no % 6) {
         case 0:
@@ -1645,7 +1639,7 @@ void JUDGE_behavior(struct Enforcer *player_ptr, struct Character *JUDGE_ptr, in
                     printf("hah.\n");
                     sleep(1);
                     center_screen(WIDTH, "%s\n", "A divine light shines between you two before exploding into a star.");
-                    player_ptr->attr->health -= maximum(1, (10 * JUDGE_ptr->attack) - player_ptr->attr->karma / 5);
+                    player_ptr->attr->health -= maximum(1, (7 * JUDGE_ptr->attack) - player_ptr->attr->karma / 5);
                     JUDGE_ptr->health -= maximum(1, (10 * JUDGE_ptr->attack) - JUDGE_ptr->karma / 5);
                     break;
                 case No:
@@ -1742,7 +1736,7 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
     char intro_file[50];
     char battle_file[50];
     char prelude_file[50];
-
+    Mix_HaltChannel(-1);
     Mix_Chunk *intro_wav = NULL;
     sprintf(intro_file, "Music\\%s_i.wav", enemy_ptr->name);
     if ((intro_wav = Mix_LoadWAV(intro_file)) == NULL) {
@@ -1769,7 +1763,7 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             character_line(' ', "(After patrolling a few blocks, I stepped inside a building with inviting open doors.)");  // Pretend that the transition to the next map was a few blocks worth of walking
             character_line(symbol, "Welcome to Dantalion's Spire, the best oriental barbershop this side of the globe. If you would,\nplease take off your boots, sir.");   // Japanese etiquette calls for removal of shoes before entering a private space
             /* Scenario : User has interacted with KID before arriving to see DOC (user has a hint of who DOC is already) */
-            if (fate_returner('c') != NEVER_MET) {  // Dantalion's Spire is a name that refers to the demon's (that can teach an art or science) spire, where a spire can refer to Cue, KID's surname, or the barber pole spirals you typically see (red, white, blue stripes)
+            if (fate_returner('c') != THIRD_PARTY) {  // Dantalion's Spire is a name that refers to the demon's (that can teach an art or science) spire, where a spire can refer to Cue, KID's surname, or the barber pole spirals you typically see (red, white, blue stripes)
                 character_line('^', "Could he be...?"); // Hint that DOC is somebody important / known already (learnt about him in KID's intro)
                 character_line('|', "Yep, I think it must be him.");
                 /* Scenario : KID messaged DOC on his phone before his capture */
@@ -1807,7 +1801,7 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             else {
                 character_line(' ', "(A young girl immediately caught my eye. She was skipping around merrily.)");
-                if (fate_returner('c') != NEVER_MET) {
+                if (fate_returner('c') != NEVER_MET && fate_returner('c') != THIRD_PARTY) {
                     character_line('^', "Another kid. Seriously, what has the world come to?");
                     character_line('|', "Beats me. Maybe humans are just naturally evil.");
                 }
@@ -1863,7 +1857,8 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             else {
                 // Interaction w/ BAT immediately precedes the encounter w/ ARSONIST (TRAILED mode)
-                if (fate_returner('L') == NEVER_MET) {
+                if (fate_returner('L') == NEVER_MET || fate_returner('L') == THIRD_PARTY) {
+                    extra_store('@', HUNTED);
                     character_line(' ', "(I heard loud blasting noises! This is bad!)");
                     character_line('^', "Who are you, a terrorist?!");
                     character_line(symbol, "Nope. I'm a glorified pest exterminator, how about you?");
@@ -1886,6 +1881,7 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                 }
                 // Interaction w/ LUNCHLADY immediately precedes the encounter w/ ARSONIST 
                 else {
+                    extra_store('L', HUNTED);
                     character_line(' ', "(The homeless shelter is up in flames. Smoke is all about. It's hard to see and breathe.)");
                     character_line(symbol, "No leaving the shelter, my guy.");
                     character_line('^', "Who are you? Please tell me you're a firefighter.");
@@ -2003,7 +1999,8 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                         sleep(2);
                         character_line(symbol, "And that's all ya gotta know. Now, I'll fly ya back out where we met.");
                         character_line('|', "Yeah, you look ready to go. You look slightly stronger now! Good on ya.");
-                        return TRUE;
+                        keystr = Yes;
+                        break;
                     case Fight:
                         extra_store(symbol, FOUGHT);
                         character_line('^', "What I want is for you and your brother to fight me in fair fights. One at a time.");
@@ -2017,7 +2014,8 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                         }
                         character_line('^', "It's go time!");
                         character_line(symbol, "Don't disappoint me.");
-                        return FALSE;
+                        keystr = No;
+                        break;
                     case Cancel:
                         player_ptr->alignment += 3;
                         extra_store(symbol, HALTED);
@@ -2025,11 +2023,12 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                         character_line(symbol, "Crikey! A tad iffy there, wouldn't ya say?");
                         character_line('^', "It's perfectly reasonable though. You can grant this wish, right?");
                         character_line(symbol, "... Sure. I'll give it a go. No promises, mate!");
-                        character_line('^', "What a bad response. I'm counting on you, so remember my wish for the rest of your life.\n"
+                        character_line('^', "What a poor response. Well, I'm counting on you, so remember my wish for the rest of your life.\n"
                                             "Stop your nonsensical game. That's it.");
                         character_line(symbol, "Right... Now, I'll fly ya back out where we met.");
                         character_line('|', "Yeah, we're ready to go. Let's hope these two honor your wish.");
-                        return TRUE;
+                        keystr = Yes;
+                        break;
                     case Sibling:
                         player_ptr->alignment--;
                         extra_store(symbol, DUEL);
@@ -2069,7 +2068,8 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                         character_line('^', "Congratulations on your flawless victory.");
                         character_line(symbol, "He had buckley's chance!");
                         character_line('^', "Now that that's done, I'm feeling good enough to fly back!");
-                        return TRUE;
+                        keystr = Yes;
+                        break;
                     case _EOF:
                         quit();
                         break;
@@ -2115,7 +2115,7 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             character_line(symbol, "...");
             character_line('^', "She's still working on that drawing of the ocean. Although, it hasn't progressed much.");
             character_line('|', "Now's your chance to launch a surprise attack! She's cornered herself on this cliff.");
-            character_line(symbol, "What do YOU want? Please, all of you, stop approaching me. I'm focused on drawing the ocean, not a massacre.");
+            character_line(symbol, "What do YOU want? Please, all of you, stop approaching me. I'm focused on drawing the ocean now, not a massacre.");
             character_line('^', "Oh? There are others that have confronted you in this game already?");
             character_line(symbol, "Yes. A few of them were wholesome, but the others were filled with blind bloodlust.");
             character_line('^', "They're just trying to win the game. What about you?");
@@ -2235,7 +2235,22 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             break;
         case 'V':
-            printf("Y/N?\n");
+            character_line(' ', "(I was just about finished with my patrol, but somebody was blocking my way.)");
+            character_line('^', "What's up with that guy? He's blocking the way. I've gotta pass the fence to get back home.");
+            character_line('|', "Wait up. I suggest you to be wary.");
+            character_line('^', "Fine. Just tell me what you know.");
+            character_line('|', COP_intro_1);
+            character_line('|', COP_intro_2);
+            character_line('^', "So that's how it is, huh? He's still in my way. I've got to confront this guy.");
+            character_line('|', "I'll lurk around so that he knows you're a fellow enforcer. Hopefully, he understands.");
+            character_line('^', "Hey, fellow enforcer. What're you doing here?");
+            character_line(symbol, "Hm? A criminal. Prepare thyself.");
+            character_line('|', "Wait, wait. I'm his sword. We're enforcers like you. Think of us as allies.");
+            character_line(symbol, "Allies? Hmph. Very well. Wander elsewhere, for I have this house under control. All criminals inside are mine.");
+            character_line('^', "Wait... That's my house you're talking about.");
+            character_line(' ', "(My wife and kids are in there... He'll see them if he enters.)");
+            character_line(symbol, "Nonetheless, I will investigate it. Such is my duty. Feel free to enter when I'm finished.");
+            printf("Will you allow the enforcer to continue his search? (y / (n =  battle))\n");
             break;
         case 'X':
             enemy_ptr->behavior = &JUDGE_behavior;
@@ -2246,8 +2261,12 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             character_line(symbol, "Truthfully, I don't remember. All I know is, you've been defying me, your... EVERYTHING.");
             character_line('|', "It's the one that invented me, my only enemy. I see now.");
             character_line('^', "Your enemy? What should I do?");
+            character_line('|', JUDGE_intro_1);
+            character_line('|', JUDGE_intro_2);
+            character_line('|', JUDGE_intro_3);
+            character_line('|', JUDGE_intro_4);
             character_line(symbol, "You do know you have a quota to withhold? Man, brats like you...");
-            character_line(symbol, "I adore them so.");
+            character_line(symbol, "I despise them so.");
             keystr = No;
             break;
     }
@@ -2291,11 +2310,12 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
         }
     }
     quit();
+    return _EOF;
 }
 
 /* decline : cues dialogue that happens when you spare the enemy */
 void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
-    int keystr, symbol, a_fate, round = 1, result;  // Used for decline with FRAUDSTER
+    int keystr, symbol, round = 1, result;  // Used for decline with FRAUDSTER
     float your_score = 0.0, foe_score = 0.0;    // Used for decline with FRAUDSTER
     skip_scene = FALSE;
     set_state_vals(Controller, FALSE, FALSE, TRUE, FALSE, FALSE);
@@ -2389,10 +2409,10 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                             character_line('|', "You fell into their trap! You were operated on by a barber or maybe you wanted that?");
                             character_line('^', "My muscles are tingling, my body feels very peculiar.");
                             center_screen(WIDTH, "%s\n", "Your attack power increased by 1.");
-                            center_screen(WIDTH, "%s\n", "Your maximum health decreased by 5.");
+                            center_screen(WIDTH, "%s\n", "Your maximum health increased by 5.");
                             ++player_ptr->attr->attack;
-                            player_ptr->attr->max_health -= 5;
-                            player_ptr->attr->health = minimum(player_ptr->attr->max_health, player_ptr->attr->health);
+                            player_ptr->attr->max_health += 5;
+                            player_ptr->attr->health += 5;
                             sleep(5);
                         }
                         else {
@@ -2421,7 +2441,7 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                         quit();
                         break;
                 }
-                if (fate_returner('c') != NEVER_MET) {
+                if (fate_returner('c') != NEVER_MET && fate_returner('c') != THIRD_PARTY) {
                     character_line('|', "Another one spared! What a joke. The dynamic duo, they'll kill again, you know...");
                 }
                 else {
@@ -2464,7 +2484,7 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             character_line(symbol, "That's what I thought. Y'know what, forget about it. I've got work to do, officer.");
             character_line('^', "We're watching you. Don't blunder at your peak.");
             character_line(symbol, "Indeed, wiseguy. Make the most of your day, officer.");
-            character_line('^', "He's off but still seems distressed at something. Ah, the struggles of working everyday...");
+            character_line('^', "He's off but still seems distressed about something. Ah, the struggles of working everyday...");
             character_line('|', "Mayhaps. I get why you didn't go after him, but think of the fame you would get! A news article, maybe?");
             character_line('^', "You think a newbie like me could take him? You're giving me too much credit.");
             break;
@@ -2473,6 +2493,10 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             character_line(symbol, "Bye.");
             character_line('^', "He's quite a quiet one...");
             character_line('|', "And a bit insane, wouldn't you say? I didn't think you'd allow your winning streak to end so quickly!");
+            character_line('^', "Don't ask me. It's just what I do.");
+            character_line('|', "Hey! Look yonder. He dropped something on the ground.");
+            character_line('^', "Hmmm... Maybe we can use this. He vanished somewhere, so it's not like we can return his item, right?");
+            
             break;
         case '*':
             character_line('^', "Carry on. You seem genuine enough.");
@@ -2487,7 +2511,8 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             character_line('^', "Well, it looks orderly, and I've got my next job. This is goodbye.");
             character_line(symbol, "Oh, is that all there is to the safety check? I got nervous for nothing!");
             if (total_fate(CONVICTED) > 1) {
-                character_line(symbol, "Oh! Before you leave, would you care to try my salisbury steak? It's very good, I swear! (y / n)");
+                character_line(symbol, "Oh! Before you leave, would you care to try my salisbury steak? It's very good, I swear!");
+                printf("Will you accept her offer and stay for some salisbury steak? (y / n)\n");
                 while ((keystr = getaction(Controller)) != _EOF && keystr != Yes && keystr != No) {
                     ;
                 }
@@ -2550,7 +2575,7 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                     character_line('^', "Tic-tac-toe, a classic.");
                     character_line(symbol, "Okay! Thoooough, it's not really a game of chance.");
                     character_line(symbol, "We'll play a best of 5 where draws give 0.5 points. How about that?");
-                    while (your_score < 3.0 && foe_score < 3.0) {
+                    while (your_score < 1.0 && foe_score < 3.0) {
                         clrscr();
                         printf("^| %.1f - %.1f |? Bo5\n", your_score, foe_score);
                         if (your_score < 1.0) {
@@ -2579,16 +2604,16 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                     clrscr();
                     printf("^| %.1f - %.1f |? Bo5\n", your_score, foe_score);   // Print final score
                     sleep(3);
-                    if (your_score == foe_score) {
+                    if (your_score > foe_score) {
                         character_line(symbol, "Congrats, you won!");
                         character_line('^', "Good games.");
                         character_line('|', "Nice job. What're you, a tic-tac-toe champion?");
                         character_line(symbol, "That was fun! Here, take this. I've gotta run. May luck be by your side always!");
-                        center_screen(WIDTH, "You got a shard of a broken die from Dalia.");
+                        center_screen(WIDTH, "%s\n", "You got a shard of a broken die from Dalia.");
                         add_item(&first_item, STRENGTH);
                         sleep(3);
                     }
-                    else if (your_score > foe_score) {
+                    else if (your_score < foe_score) {
                         character_line('^', "You won. Congratulations on your victory.");
                         character_line(symbol, "Thanks. You played well too. Anyway, I've gotta run. May luck be by your side always!");
                         character_line('|', "You got destroyed, mate. Now get going!");
@@ -2652,24 +2677,21 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                         printf("^| %d - %d |? Bo1\n", (int) your_score, (int) foe_score);
                         if (duel_enemy() == DEAD) {
                             ++foe_score;
+                            extra_store('^', KILLED);
                         }
                         else {
                             ++your_score;
+                            extra_store('?', KILLED);
+                            player_ptr->alignment -= 5;
+                            center_screen(WIDTH, "%s\n", "You find a shard of a broken die on the floor.");
+                            fate_store(symbol, CONVICTED);
+                            add_item(&first_item, JUDGEMENT);
+                            sleep(3);
                         }
                         break;
                     }
                     printf("^| %d - %d |?\n", (int) your_score, (int) foe_score);
                     sleep(3);
-                    if (foe_score == 1) {
-                        player_death();
-                    }
-                    else {
-                        player_ptr->alignment -= 5;
-                        center_screen(WIDTH, "%s\n", "You find a shard of a broken die on the floor.");
-                        fate_store(symbol, CONVICTED);
-                        add_item(&first_item, JUDGEMENT);
-                        sleep(3);
-                    }
                     break;
                 case _EOF:
                     quit();
@@ -2708,11 +2730,12 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                 character_line('^', "Sure, I'm down to play it. Tell me the rules.");
                 character_line(symbol, "Deadset, it's a secret.");
                 character_line('^', "I find that unusual and creepy. So, what's with the walkie talkie?");
-                if (total_fate(CONVICTED) > -1) {
+                if (total_fate(CONVICTED) > 3) {
                     character_line(symbol, "Good on ya! The game is yours, if ya want to play.");
                     printf("Will you play in the game? (y / n)\n");
-                    while ((keystr = getaction(Controller)) != _EOF && keystr != Yes && keystr != No)
+                    while ((keystr = getaction(Controller)) != _EOF && keystr != Yes && keystr != No) {
                         ;
+                    }
                     switch (keystr) {
                         case Yes:
                             extra_store('\\', COMPETED);
@@ -2772,7 +2795,7 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             character_line('|', "You've still got a quota to meet, so pay attention! We go!");
             break;
     }
-    Mix_FadeOutChannel(-1, 5000);
+    Mix_HaltChannel(-1);
     fate_store(enemy_ptr->rep, SPARED);
 }
 
@@ -2827,7 +2850,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
         case 'M':
             character_line('^', "You're done for. Fire ants are no match for me.");
             character_line(symbol, "No! Wake up, everybody...");
-            character_line('|', "I'm sorry to say these were not cockroaches, little one!");
+            character_line('|', "I'm sorry to say these were not cockroaches, little one! They're deceased.");
             character_line(symbol, "Perhaps some will be at the sandbox. I'll remember you, one with the cap!");
             character_line('|', "You can't leave now. Know what happens to losers?");
             character_line(symbol, "What's happening?!");
@@ -3076,19 +3099,63 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             sleep(3);
             break;
         case 'V':
-            add_item(&first_item, DUE_RECOMPENSE);
-            sleep(3);
+            character_line(symbol, "Hah...hah...");
+            character_line('^', "It had to come to this.");
+            character_line(symbol, "Why...? Are you failing to meet your quota? I'll gladly hand the baton to a future generation enforcer.");
+            character_line('^', "I have my reasons. Sorry.");
+            character_line(symbol, "This may be my last day of service as an enforcer. Good. It was terrible...");
+            character_line('|', "Well? He's not exactly a criminal. It's your call whether or not you want to turn him in.");
+            character_line(symbol, "Just go on and do it. Sooner or later, I'll mess up anyway. The boss will get me when time comes.");
+            printf("Will you absorb Algoslog for the rewards? (y / n)\n");
+            while ((keystr = getaction(Controller)) != _EOF && keystr != Yes && keystr != No) {
+                ;
+            }
+            switch (keystr) {
+                case Yes:
+                    character_line('^', "Alright, I'll do it. I'll absorb you, Algoslog.");
+                    character_line(symbol, "Splendid. Kid, life is not fair. Life is not pleasant. I enjoyed living before the Enforcer Program.");
+                    character_line('^', "...");
+                    character_line(symbol, "There's no point opposing the boss. Whatever you choose to do from now on, enjoy it to its fullest. Don't be like me.\n"
+                                           "I wish I remembered what my parents taught me. It felt like my mind was deteriorating since I became an enforcer. Now... It's still.");
+                    character_line('^', "I'm sorry to hear that.");
+                    character_line(symbol, "If you're truly want to apologize, don't just say \"sorry\" and be done with it. Apologize with your actions. Show that you care.");
+                    character_line('^', "Yes... That's what I always say as well.");
+                    character_line(symbol, "Hm? Agh, my brain hurts. You may turn me in now. Farewell, world.");
+                    character_line('^', "Your tale ends now, I think. Farewell.");
+                    character_line('|', "He left a broken sword on the ground. We might be able to use that. Let's grab it.");
+                    center_screen(WIDTH, "%s\n", "You picked up Algoslog's broken sword from the ground.");
+                    add_item(&first_item, DUE_RECOMPENSE);
+                    sleep(3);
+                    break;
+                case No:
+                    extra_store('V', NOT_ABSORBED);
+                    character_line('^', "No, I don't think I will. As much as you want me to do it, I won't do it.");
+                    character_line(symbol, "You... You insult me so? What point was there to fighting me, fool?!");
+                    character_line('^', "I told you. You're in the way. Simple as simple can be.");
+                    character_line('|', "It's likely that we would enter your house regardless of how many times you told him that.");
+                    character_line(symbol, "I thought salvation came. Wrong, wrong, wrong I was!");
+                    character_line('|', "Why can't you just fail your quota? Wouldn't that be the end of you as well?");
+                    character_line(symbol, "After being the boss's guinea pig, yes. That's worse than meeting my quota every day. Endless suffering should be the name of his lab.");
+                    character_line('|', "How is that ANY different from my absorption of you?");
+                    character_line(symbol, "You don't get it... I'm a first gen. We don't work the same as you guys. I saw it with my own eyes.\n"
+                                           "A fellow first gen was absorbed by an enforcer. Unlike the criminal we capture, the first gen released blood upon absorption. He died.");
+                    character_line('^', "You wish to die that much? Maybe...");
+                    character_line(symbol, "Forget it. You lack conviction, man. I'll find another one to capture me. That's my wish...");
+                    character_line('|', "He's gone. Looks like he was holding back his strength too.");
+                    enemy_ptr->karma = 0;
+                    break;
+            }
             break;
     }
-    player_ptr->attr->karma += ceil(250 / enemy_ptr->karma * MULTIPLIER);
-    Mix_FadeOutChannel(-1, 5000);
+    player_ptr->attr->karma += (enemy_ptr->karma) ? ceil(250 / enemy_ptr->karma * MULTIPLIER) : 0;
+    Mix_HaltChannel(-1);
     fate_store(enemy_ptr->rep, CONVICTED);
 }
 
 /* character_line : display dialogue from a character (prompts for input to continue) */
 void character_line(char rep, char *line) {
     int keystr;
-    if (skip_scene) {
+    if (skip_scene && !Controller->player_state.is_fate) {
         return;
     }
     printf("%c : %s\n", rep, line);
@@ -3197,7 +3264,7 @@ void damage_dealt(struct Character *char1, struct Character *char2, int damage) 
             sprintf(message, "The white knight took %d damage.", damage);
             char2->ally_health -= damage;
         }
-        else if (char2->rep == '^') {
+        else if (char2->rep == '^' || char2->rep == 'V') {
             if (char1->buff == PIERCE) {
                 sprintf(message, "The golem's armor was penetrated and destroyed.");
                 buff_char(char2, char1, NONE);
@@ -3352,7 +3419,7 @@ void trigger_recompense(void) {
 /* ui : prints out the common attributes */
 int ui(struct Character *char_ptr) {
     char stats[50];
-    sprintf(stats, "Health = %d | Attack = %u | Karma = %d", char_ptr->health, char_ptr->attack, char_ptr->karma);
+    sprintf(stats, "Health = %d / %d | Attack = %u | Karma = %d", char_ptr->health, char_ptr->max_health, char_ptr->attack, char_ptr->karma);
     center_screen(WIDTH, "%s\n", stats);
     return char_ptr->health;
 }
@@ -3371,7 +3438,7 @@ int ui_enforcer(struct Enforcer *enforcer_ptr) {
     for (int i = 1; i < enforcer_ptr->sword_points + 1; i++) {
         sword_meter[i] = blade;
     }
-    sprintf(stats, "Health = %d | Attack = %u | Karma = %d | Sword = %s", enforcer_ptr->attr->health, enforcer_ptr->attr->attack, enforcer_ptr->attr->karma, sword_meter);
+    sprintf(stats, "Health = %d / %d | Attack = %u | Karma = %d | Sword = %s", enforcer_ptr->attr->health, enforcer_ptr->attr->max_health, enforcer_ptr->attr->attack, enforcer_ptr->attr->karma, sword_meter);
     center_screen(WIDTH, "%s\n", stats);
     return enforcer_ptr->attr->health;
 }
@@ -3617,6 +3684,22 @@ void buff_char(struct Character *char1, struct Character *char2, int buff_no) {
         ++char1->attack;
     }
     char1->buff = buff_no;
+    if (buff_no == SUMMON) {
+        switch (char1->rep) {
+            case '^': case 'V':
+                char1->ally_health = GOLEM_HP;
+                char1->ally_attack = GOLEM_ATK;
+                break;
+            case 'C':
+                char1->ally_health = GANGSTERS_HP;
+                char1->ally_attack = GANGSTERS_ATK;
+                break;
+            case '&':
+                char1->ally_health = WHITE_KNIGHT_HP;
+                char1->ally_attack = WHITE_KNIGHT_ATK;
+                break;
+        }
+    }
 }
 
 void s_buff_char(struct Character *char1, struct Character *char2, int s_buff_no) {
@@ -3748,6 +3831,9 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
             else {
                 center_screen(WIDTH, "%s\n", "Nothing happens.");
             }
+            center_screen(WIDTH, "%s\n", "You snatched 2 coins.");
+            sleep(1);
+            update_balance(&first_item, 2);
             break;
         case FIRE:
             sprintf(item_message, "%s %s", user_ptr->attr->name, "pierced and ignited with Agneyastra.");
@@ -3810,10 +3896,11 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
             break;
         case JUDGEMENT:
             printf("How much health points will you use?\n");
+            set_state_vals(Controller, FALSE, FALSE, FALSE, TRUE, FALSE);
             while ((amt = getnumber()) == _EOF) {
                 ;
             }
-            center_screen(WIDTH, "%s\n", "You unleash lightning bolts from the cosmos.");
+            center_screen(WIDTH, "%s\n", "You unleashed lightning bolts from the cosmos.");
             user_ptr->attr->health -= amt;
             enemy_ptr->health -= amt;
             sleep(1);
@@ -3826,14 +3913,18 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
         case STRENGTH:
             center_screen(WIDTH, "%s\n", "You spread the power from the cosmos onto the battlefield.");
             ++user_ptr->attr->attack;
+            if (user_ptr->attr->buff == SUMMON) {
+                ++user_ptr->attr->ally_attack;
+            }
             ++enemy_ptr->attack;
+            if (enemy_ptr->buff == SUMMON) {
+                ++enemy_ptr->ally_attack;
+            }
             break;
         case GOLEM:
             sprintf(item_message, "%s %s", user_ptr->attr->name, "gave the doll life as a golem!");
             center_screen(WIDTH, "%s\n", item_message);
-            user_ptr->attr->health -= 15;
-            user_ptr->attr->ally_health = 15;
-            user_ptr->attr->ally_attack = 3;
+            user_ptr->attr->health -= GOLEM_HP;
             buff_char(user_ptr->attr, enemy_ptr, SUMMON);
             break;
         case RANG:
@@ -3853,7 +3944,7 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
         case MILK:
             --item_used->uses;
             printf("What will you do? (0 / 1 = Buff / Debuff)\n");
-            while ((amt = getnumber()) == _EOF || amt != 0 && amt != 1) {
+            while ((amt = getnumber()) == _EOF || (amt != 0 && amt != 1)) {
                 ;
             }
             if (!amt) {
@@ -3911,6 +4002,14 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
                 }
             }
             break;
+        case COINS:
+            --item_used->uses;
+            increment_sword(user_ptr);
+            user_ptr->attack_cd = maximum(0, user_ptr->attack_cd - 2);
+            user_ptr->signature_cd = maximum(0, user_ptr->signature_cd - 2);
+            user_ptr->defense_cd = maximum(0, user_ptr->defense_cd - 2);
+            center_screen(WIDTH, "%s\n", "You deftly sliced the coin in half.");
+            break;
         case DUE_RECOMPENSE:
             --item_used->uses;
             user_ptr->attr->karma += 50;
@@ -3939,8 +4038,8 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
     }
     if (user_ptr->attr->buff == INVULNERABLE) {
         center_screen(WIDTH, "%s\n", "The heist has finished!");
-        user_ptr->attr->buff = enemy_ptr->buff;
-        enemy_ptr->buff = NONE;
+        buff_char(user_ptr->attr, enemy_ptr, enemy_ptr->buff);
+        buff_char(enemy_ptr, user_ptr->attr, NONE);
         sleep(2);
     }
     user_ptr->attack_cd = maximum(0, user_ptr->attack_cd - 1);
@@ -3953,5 +4052,427 @@ void increment_sword(struct Enforcer *enforcer_ptr) {
     if (enforcer_ptr->sword_points < MAX_SWORD) {
         enforcer_ptr->sword_points++;
     }
+    return;
+}
+
+
+void ending(int alignment) {
+    set_state_vals(Controller, FALSE, FALSE, FALSE, FALSE, TRUE);
+    Mix_HaltChannel(-1);
+
+    char ending_file[50];
+    Mix_Chunk *ending_wav = NULL;
+    if (alignment < MAX_ALIGNMENT / 3) {
+        sprintf(ending_file, "Music\\Left.wav");
+    }
+    else if (alignment < 2 * (MAX_ALIGNMENT / 3)) {
+        sprintf(ending_file, "Music\\Neutral.wav");
+    }
+    else {
+        sprintf(ending_file, "Music\\Right.wav");
+    }
+    if ((ending_wav = Mix_LoadWAV(ending_file)) == NULL) {
+        fprintf(stderr, "Could not load ending wav file.\n");
+    }
+
+    if (Mix_FadeInChannel(-1, ending_wav, -1, 3000) == -1) {
+        fprintf(stderr, "Could not play ending wav file.\n");
+    }
+
+    for (int enemy_number = 0; enemy_number < NUM_ENEMIES; enemy_number++) {
+        clrscr();
+        char curr_rep = all_fates[enemy_number].rep;
+        switch (curr_rep) {
+            case 'c':
+                if (is_active(curr_rep)) {
+                    if (is_alive('+')) {
+                        if (is_alive('X')) {
+                            character_line(curr_rep, KID_2);
+                        }
+                        else {
+                            character_line(curr_rep, KID_1);
+                        }
+                    }
+                    else {
+                        character_line(curr_rep, KID_5);
+                    }
+                }
+                else {
+                    if (is_alive('X')) {
+                        character_line(curr_rep, KID_3);
+                    }
+                    else {
+                        if (is_active('+')) {
+                            character_line(curr_rep, KID_4);
+                        }
+                        else {
+                            character_line(curr_rep, KID_1);
+                        }
+                    }
+                }
+                break;
+            case '+':
+                if (extra_returner(curr_rep, SURGERY)) {
+                    character_line(curr_rep, DOC_1);
+                }
+                else {
+                    if (is_alive(curr_rep)) {
+                        if (is_alive('c')) {
+                            if (fate_returner('X') == CONVICTED) {
+                                character_line(curr_rep, DOC_2);
+                            }
+                            else {
+                                character_line(curr_rep, DOC_4);
+                            }
+                        }
+                        else {
+                            character_line(curr_rep, DOC_4);
+                        }
+                    }
+                    else {
+                        if (is_alive('X')) {
+                            character_line(curr_rep, DOC_3);
+                        }
+                        else {
+                            if (is_active('c')) {
+                                character_line(curr_rep, DOC_5);
+                            }
+                            else {
+                                character_line(curr_rep, DOC_6);
+                            }
+                        }
+                    }
+                }
+                break;
+            case 'M':
+                if (is_alive(curr_rep)) {
+                    if (fate_returner('X') == CONVICTED) {
+                        character_line(curr_rep, QUEEN_1);
+                    }
+                    else {
+                        character_line(curr_rep, QUEEN_4);
+                    }
+                }
+                else {
+                    if (is_alive('X')) {
+                        character_line(curr_rep, QUEEN_2);
+                    }
+                    else {
+                        if (is_arrested('L')) {
+                            character_line(curr_rep, QUEEN_3);
+                        }
+                        else {
+                            character_line(curr_rep, QUEEN_5);
+                        }
+                    }
+                }
+                break;
+            case '%':
+                if (fate_returner('X') == CONVICTED) {
+                    character_line(curr_rep, LORD_1);
+                }
+                else {
+                    if (is_active(curr_rep)) {
+                        character_line(curr_rep, LORD_3);
+                    }
+                    else if (is_arrested(curr_rep)) {
+                        character_line(curr_rep, LORD_2);
+                    }
+                    else {
+                        character_line(curr_rep, LORD_4);
+                    }
+                }
+                break;
+            case '$':
+                if (fate_returner('X') == CONVICTED) {
+                    character_line(curr_rep, STOWAWAY_1);
+                }
+                else {
+                    if (is_alive(curr_rep)) {
+                        character_line(curr_rep, STOWAWAY_3);
+                    }
+                    else {
+                        character_line(curr_rep, STOWAWAY_2);
+                    }
+                }
+                break;
+            case '*':
+                if (is_alive('X')) {
+                    if (is_arrested(curr_rep)) {
+                        character_line(curr_rep, ARSONIST_2);
+                    }
+                    else {
+                        character_line(curr_rep, ARSONIST_4);
+                    }
+                }
+                else {
+                    if (fate_returner(curr_rep) == CONVICTED) {
+                        character_line(curr_rep, ARSONIST_5);
+                    }
+                    else {
+                        if (extra_returner(curr_rep, TRAILED)) {
+                            character_line(curr_rep, ARSONIST_3);
+                        }
+                        else {
+                            character_line(curr_rep, ARSONIST_1);
+                        }
+                    }
+                }
+                break;
+            case 'L':
+                if (extra_returner('L', HUNTED)) {
+                    character_line(curr_rep, LUNCHLADY_1);
+                }
+                else {
+                    if (is_alive(curr_rep)) {
+                        character_line(curr_rep, LUNCHLADY_2);
+                    }
+                    else {
+                        if (is_alive('X')) {
+                            character_line(curr_rep, LUNCHLADY_3);
+                        }
+                        else {
+                            character_line(curr_rep, LUNCHLADY_4);
+                        }
+                    }
+                }
+                break;
+            case '?':
+                if (extra_returner(curr_rep, KILLED)) {
+                    character_line(curr_rep, FRAUDSTER_1);
+                }
+                else {
+                    if (is_arrested(curr_rep)) {
+                        character_line(curr_rep, FRAUDSTER_3);
+                    }
+                    else {
+                        if (is_alive('X')) {
+                            character_line(curr_rep, FRAUDSTER_4);
+                        }
+                        else {
+                            character_line(curr_rep, FRAUDSTER_2);
+                        }
+                    }
+                }
+                break;
+            case 'C':
+                if ((is_active(curr_rep) || fate_returner('X') == CONVICTED) &&
+                 (fate_returner('!') == VICTORIOUS || !extra_returner('\\', COMPETED) || (extra_returner('\\', COMPETED) && !extra_returner('\\', WON)))) {
+                     character_line(curr_rep, NAPPER_1);
+                }
+                else if (is_alive(curr_rep)) {
+                    character_line(curr_rep, NAPPER_2);
+                }
+                else {
+                    if (is_alive('X')) {
+                        character_line(curr_rep, NAPPER_3);
+                    }
+                    else {
+                        character_line(curr_rep, NAPPER_4);
+                    }
+                }
+                break;
+            case '@':
+                if (extra_returner(curr_rep, HUNTED)) {
+                    character_line(curr_rep, BAT_1);
+                }
+                else {
+                    if (fate_returner('X') == CONVICTED) {
+                        character_line(curr_rep, BAT_2);
+                    }
+                    else {
+                        if (is_arrested(curr_rep)) {
+                            character_line(curr_rep, BAT_3);
+                        }
+                        else {
+                            character_line(curr_rep, BAT_4);
+                        }
+                    }
+                }
+                break;
+            case '\\':
+                if (extra_returner(curr_rep, HALTED)) {
+                    character_line(curr_rep, ASSASSIN_1);
+                }
+                else if (extra_returner(curr_rep, DUEL)) {
+                    character_line(curr_rep, ASSASSIN_2);
+                }
+                else {
+                    if (is_alive(curr_rep)) {
+                        character_line(curr_rep, ASSASSIN_3);
+                    }
+                    else {
+                        if (is_alive('X')) {
+                            character_line(curr_rep, ASSASSIN_4);
+                        }
+                        else {
+                            if (is_alive('/')) {
+                                character_line(curr_rep, ASSASSIN_5);
+                            }
+                            else {
+                                character_line(curr_rep, ASSASSIN_3);
+                            }
+                        }
+                    }
+                }
+                break;
+            case '/':
+                if (extra_returner(curr_rep, HALTED)) {
+                    character_line(curr_rep, HACKER_1);
+                }
+                else if (extra_returner(curr_rep, DUEL)) {
+                    character_line(curr_rep, HACKER_2);
+                }
+                else {
+                    if (is_alive('\\')) {
+                        character_line(curr_rep, HACKER_3);
+                    }
+                    else {
+                        if (is_active(curr_rep)) {
+                            if (is_alive('X')) {
+                                character_line(curr_rep, HACKER_6);
+                            }
+                            else {
+                                character_line(curr_rep, HACKER_5);
+                            }
+                        }
+                        else if (fate_returner(curr_rep) == CONVICTED) {
+                            if (is_alive('X')) {
+                                character_line(curr_rep, HACKER_4);
+                            }
+                            else {
+                                character_line(curr_rep, HACKER_3);
+                            }
+                        }
+                        else {
+                            character_line(curr_rep, HACKER_6);
+                        }
+                    }
+                }
+                break;
+            case '!':
+                if (fate_returner(curr_rep) == CONVICTED) {
+                    if (is_alive('X')) {
+                        character_line(curr_rep, POLITICIAN_3);
+                    }
+                    else {
+                        character_line(curr_rep, POLITICIAN_2);
+                    }
+                }
+                else {
+                    character_line(curr_rep, POLITICIAN_1);
+                }
+                break;
+            case '#':
+                if (is_alive(curr_rep)) {
+                    if (fate_returner('!') == CONVICTED && fate_returner('&') == CONVICTED) {
+                        character_line(curr_rep, FERAL_1);
+                    }
+                    else {
+                        character_line(curr_rep, FERAL_4);
+                    }
+                }
+                else {
+                    if (is_alive('X')) {
+                        character_line(curr_rep, FERAL_3);
+                    }
+                    else {
+                        character_line(curr_rep, FERAL_2);
+                    }
+                }
+                break;
+            case '&':
+                if (is_alive(curr_rep)) {
+                    if (fate_returner('!') == CONVICTED) {
+                        character_line(curr_rep, ARTIST_1);
+                    }
+                    else {
+                        character_line(curr_rep, ARTIST_4);
+                    }
+                }
+                else {
+                    if (is_alive('X')) {
+                        character_line(curr_rep, ARTIST_3);
+                    }
+                    else {
+                        character_line(curr_rep, ARTIST_2);
+                    }
+                }
+                break;
+            case 'V':
+                if (fate_returner(curr_rep) == THIRD_PARTY) {
+                    printf("Met his end to %c\n", all_fates[15].extra[0]);
+                    if (fate_returner('X') == CONVICTED) {
+                        character_line(curr_rep, COP_5);
+                    }
+                    else if (all_fates[15].extra[0] == 'X') {
+                        character_line(curr_rep, COP_2);
+                    }
+                    else {
+                        character_line(curr_rep, COP_1);
+                    }
+                }
+                else if (extra_returner(curr_rep, NOT_ABSORBED)) {
+                    if (is_alive('X')) {
+                        character_line(curr_rep, COP_3);
+                    }
+                    else {
+                        character_line(curr_rep, COP_5);
+                    }
+                }
+                else if (fate_returner(curr_rep) == CONVICTED) {
+                    character_line(curr_rep, COP_4);
+                }
+                else {
+                    if (is_alive('X')) {
+                        character_line(curr_rep, COP_3);
+                    }
+                    else {
+                        character_line(curr_rep, COP_5);
+                    }
+                }
+                break;
+            case 'X':
+                if (is_alive(curr_rep)) {
+                    character_line(curr_rep, JUDGE_1);
+                }
+                else {
+                    character_line(curr_rep, JUDGE_2);
+                }
+                break;
+            case '^':
+                if (extra_returner(curr_rep, KILLED)) {
+                    character_line(curr_rep, USER_1);
+                }
+                else {
+                    if (fate_returner(curr_rep) == CONVICTED) {
+                        character_line(curr_rep, USER_2);
+                    }
+                    else {
+                        if (is_alive('X')) {
+                           if (is_active('*') && extra_returner('*', TRAILED) && fate_returner('X') == CONVICTED) {
+                               character_line(curr_rep, USER_3);
+                           }
+                           else if (fate_returner('V') == SPARED) {
+                               character_line(curr_rep, USER_6);
+                           }
+                           else {
+                               character_line(curr_rep, USER_4);
+                           }
+                        }
+                        else {
+                            if (fate_returner('V') == SPARED) {
+                               character_line(curr_rep, USER_7);
+                            }
+                            else {
+                               character_line(curr_rep, USER_5);
+                            }
+                        }
+                    }
+                }
+                break;
+        }
+    }
+    quit();
     return;
 }

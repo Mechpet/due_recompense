@@ -6,10 +6,14 @@ Functions that provide use that can be attributed to uses of many headers/files.
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#define SDL_MAIN_HANDLED 1
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
+
 #ifndef GENERAL_H
 #define GENERAL_H
 
-#define WIDTH 215           // Width of the terminal.
+#define WIDTH 210           // Width of the terminal.
 
 void center_screen(int decided_output_width, char *format, ...);
 int num_digits(int number_to_get_digits_of);
@@ -18,8 +22,31 @@ char *str_dup(char *pointer_to_string_to_duplicate);
 int minimum(int a, int b);
 int maximum(int a, int b);
 void flush_input(void);
+void play_sound_fx(char *file_name);
 
-/* center_screen : returns the right justified minimum field width to center the string w/ output_length to the console */
+/* play_sound_fx :
+ * Arguments: file_name - string of the file path (extension .wav) to be played by the function
+ * Implementation: Attempt to load the file based on the argument; if able to play, do so
+ * Purpose: Acts as a convenient function; plays a wav file with one call instead of copy-pasting this function's contents */
+void play_sound_fx(char *file_name) {
+    Mix_Chunk *fx_wav = NULL;
+    if ((fx_wav = Mix_LoadWAV(file_name)) == NULL) {
+        fprintf(stderr, "Could not load %s wav file.\n", file_name);
+    }
+
+    if (Mix_PlayChannel(-1, fx_wav, 0) == -1) {
+        fprintf(stderr, "Could not play %s wav file.\n", file_name);
+    }
+
+    return;
+}
+
+/* center_screen : 
+ * Arguments: screen_width - To be the width of the terminal window (tries to center to this argument)
+              fmt - The output format desired (can be "%s" or "%s\n" or whatnot)
+              ... - Additional arguments to format fmt (what's to be formatted in each '%')
+ * Implementation: Uses stdarg.h : parses through the fmt and 
+ * Purpose: returns the right justified minimum field width to approximately center the string to the console */
 void center_screen(int screen_width, char *fmt, ...) {
     va_list arguments;
     va_start(arguments, fmt);

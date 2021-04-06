@@ -17,7 +17,7 @@ int main(void) {
     fate_initialize();  // This initializes the fate structure before the first Character is encountered
     Controller = initialize_controller(Controller); // This initializes the controller structure before input is accepted
     printf("This is a work of fiction. Behaviors/actions in this game may be offensive/controversial. Thank you for understanding.");
-    sleep(0);   // This pauses the program for 3 seconds before advancing to the title screen
+    //sleep(3);   // This pauses the program for 3 seconds before advancing to the title screen
     title_screen(); // This line starts the game up by popping open the title screen.
     SDL_Quit();
     return EXIT_SUCCESS;
@@ -37,14 +37,14 @@ P. Make sure that the stack isn't very full                                     
     e. Add descriptors to the dialogue (what is going on/setting)                                   <<
 1.5. Convenient fixes
     a. Implement PRIORITY for more convenient nested move_char()                                    <<<
-    b. Easier/more efficient way to set tile symbols                                                <<
-2. Design the next map.                                                                             <
-    a. Tiles.                                                                                       <
+    b. Easier/more efficient way to set tile symbols                                                <<<
+2. Design the next map.                                                                             <<<
+    a. Tiles.                                                                                       <<<
     b. POLICE character.                                                                            <
         i. Storyline & dialogue                                                                     <
-        ii. Behavior                                                                                <
+        ii. Behavior                                                                                <<<
         iii. Drop item                                                                              <<<
-3. Rework the JUDGE character                                                                       <
+3. Rework the JUDGE character                                                                       <<<
 4. Brainstorm the fates of each character depending on options chosen                               <
 5. Implement ending screen (iterate through each fate)                                              <
 */
