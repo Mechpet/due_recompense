@@ -1,9 +1,8 @@
-#define clrscr() printf("\e[1;1H\e[2J") // This is the print format for clearing a screen without other header files like curses.h
 #include <stdio.h>
 #include <time.h>
-#include "screen.h"
+#include "title.h"
 
-int main(void) {
+int main(int argc, char *argv[]) {
     // Try to initialize SDL_mixer for audio-related functions 
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
         fprintf(stderr, "Audio output not functional.\n");
@@ -13,38 +12,12 @@ int main(void) {
         fprintf(stderr, "Audio mixer not functional.\n");
 		return -1; 
     }
-    srand(time(NULL));  // This sets the seed to a pseudo-random seed determined by the current time (works across all files)
+    srand(time(NULL));  // This sets the seed to a pseudo-random seed determined by the current time
     fate_initialize();  // This initializes the fate structure before the first Character is encountered
     Controller = initialize_controller(Controller); // This initializes the controller structure before input is accepted
     printf("This is a work of fiction. Behaviors/actions in this game may be offensive/controversial. Thank you for understanding.");
-    //sleep(3);   // This pauses the program for 3 seconds before advancing to the title screen
-    title_screen(); // This line starts the game up by popping open the title screen.
+    sleep(3 * WAIT);   // This pauses the program for 3 seconds before advancing to the title screen
+    title_screen(); // This line starts the game up by popping open the title screen
     SDL_Quit();
     return EXIT_SUCCESS;
 }
-
-/*
-CURRENT GOALS:
-P. Make sure that the stack isn't very full                                                         <<<
-1. Finish the "Battle Royale Island" event.                                                         <<
-    a. Designing and implementing POLITICIAN's drop item.                                           <<<
-        - Pot of milk from the cosmic Ocean of Milk (from Vishnu's myth)
-        - Use #1: RIVALED (versatility makes this item have less uses and an additional karma cost)
-        - Use #2: SPIKES
-    b. Verifying that moving through the LOBBY, JUNGLE, and CLIFF works (loops through them).       <<<
-    c. Implement the prizes for winning the event.                                                  <<<
-    d. Make it so that after claiming your prize, return to the initial MAP.                        <<<
-    e. Add descriptors to the dialogue (what is going on/setting)                                   <<
-1.5. Convenient fixes
-    a. Implement PRIORITY for more convenient nested move_char()                                    <<<
-    b. Easier/more efficient way to set tile symbols                                                <<<
-2. Design the next map.                                                                             <<<
-    a. Tiles.                                                                                       <<<
-    b. POLICE character.                                                                            <
-        i. Storyline & dialogue                                                                     <
-        ii. Behavior                                                                                <<<
-        iii. Drop item                                                                              <<<
-3. Rework the JUDGE character                                                                       <<<
-4. Brainstorm the fates of each character depending on options chosen                               <
-5. Implement ending screen (iterate through each fate)                                              <
-*/

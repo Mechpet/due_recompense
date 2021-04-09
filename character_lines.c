@@ -1,3 +1,7 @@
+/* character_lines.c
+Contains automatically initialized strings that contain story information about characters
+*/
+
 char KID_intro_1[] = 
                 "Cue Helix. AGE: 12 years\n"
                 "Born in to a world of promises and inspiration, he may or may not have a bright future ahead of him. Who can tell?\n"

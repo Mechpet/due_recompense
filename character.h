@@ -26,6 +26,17 @@ Also implements the fundamentals of the battle system.
 #define DEFENSE_CD 7
 #define COP_ARRESTS 3
 
+#define GOLEM_HP 15
+#define GOLEM_ATK 3
+
+#define GANGSTERS_HP 12
+#define GANGSTERS_ATK 3
+
+#define WHITE_KNIGHT_HP 9
+#define WHITE_KNIGHT_ATK 1
+
+#define NUM_PUPPETS 15 
+
 float MULTIPLIER = 0;
 enum base_hp {
     QUEEN_b_hp = 13,
@@ -187,6 +198,7 @@ int karma_decay(struct Character *player_ptr);
 void trigger_recompense(void);
 int post_damage(struct Character *char1, struct Character *char2, int damage);
 void damage_dealt(struct Character *char1, struct Character *char2, int damage);
+void flat_damage_dealt(struct Character *char1, struct Character *char2, int damage);
 void health_healed(struct Character *char1, struct Character *char2, int heal);
 
 char *debuff_status(struct Character *debuffed_char, struct Character *char2, int turn_no);
@@ -287,17 +299,17 @@ void KID_behavior(struct Enforcer *player_ptr, struct Character *KID_ptr, int tu
             else if (turn_no == 6) {
                 center_screen(WIDTH, "%s\n", "Cue quickly taps on his phone.");
                 center_screen(WIDTH, "%s\n", "*Could it be a final message before his judgment?*");
-                sleep(1);
+                sleep(WAIT);
                 extra_store('+', ALERTED);
             }
-            sleep(1);
+            sleep(WAIT);
             break;
         case 3:
             center_screen(WIDTH, "%s\n", "Cue readies his knife in his left hand...");
             KID_ptr->attack += 3;
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 /* DOC_behavior : Increases own attack while decreasing player's attack */
@@ -318,7 +330,7 @@ void DOC_behavior(struct Enforcer *player_ptr, struct Character *DOC_ptr, int tu
                 center_screen(WIDTH, "%s\n", "Hayato's biceps surge as he looks on with an evil eye.");
                 ++DOC_ptr->attack;
             }
-            sleep(1);
+            sleep(WAIT);
             break;
         case 1:
             center_screen(WIDTH, "%s\n", "Hayato slashes you with his best scissors!");
@@ -330,7 +342,7 @@ void DOC_behavior(struct Enforcer *player_ptr, struct Character *DOC_ptr, int tu
                 if (player_ptr->attr->attack > 1) {
                     --player_ptr->attr->attack;
                     center_screen(WIDTH, "%s\n", "*Your attack decreased by 1 for this battle*");
-                    sleep(1);
+                    sleep(WAIT);
                 }
             }
             else {
@@ -356,10 +368,10 @@ void DOC_behavior(struct Enforcer *player_ptr, struct Character *DOC_ptr, int tu
                 center_screen(WIDTH, "%s\n", "Hayato takes a dose of Dexedrine on the spot.");
                 health_healed(DOC_ptr, player_ptr->attr, 5);
             }
-            sleep(1);
+            sleep(WAIT);
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 /* QUEEN_behavior : Stalls the fight with acid damage per turn and guard/heals */
@@ -382,7 +394,7 @@ void QUEEN_behavior(struct Enforcer *player_ptr, struct Character *QUEEN_ptr, in
             if (turn_no == 1) {
                 center_screen(WIDTH, "%s\n", "Lille opens her leather suitcase, revealing an army of fire ants!");
                 play_sound_fx("Music\\Ants.wav");
-                sleep(1);
+                sleep(WAIT);
             }
             center_screen(WIDTH, "%s\n", "Fire ants bite into you wherever they could!");
             center_screen(WIDTH, "%s\n", "*You've been injected with acid*");
@@ -390,7 +402,7 @@ void QUEEN_behavior(struct Enforcer *player_ptr, struct Character *QUEEN_ptr, in
             debuff_char(QUEEN_ptr, player_ptr->attr, ACIDIFIED);
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 /* LORD_behavior : Overwhelms player with defeatist style */
@@ -403,7 +415,7 @@ void LORD_behavior(struct Enforcer *player_ptr, struct Character *LORD_ptr, int 
         center_screen(WIDTH, "%s\n", "Severino feels weakened and is doubting himself!");
         buff_char(LORD_ptr, player_ptr->attr, NONE);
     }
-    sleep(1);
+    sleep(WAIT);
     switch (turn_no % 5) {
         case 0:
             if (player_ptr->attr->debuff == RESTRAINED) {
@@ -451,7 +463,7 @@ void LORD_behavior(struct Enforcer *player_ptr, struct Character *LORD_ptr, int 
             }
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 /* STOWAWAY_behavior : Disables item usage early */
@@ -487,7 +499,7 @@ void STOWAWAY_behavior(struct Enforcer *player_ptr, struct Character *STOWAWAY_p
             STOWAWAY_ptr->attack = maximum(1, STOWAWAY_ptr->attack - STOWAWAY_b_attack);
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 /* ARSONIST_behavior : Weak direct attacks, strong damage over time attacks */
@@ -496,7 +508,7 @@ void ARSONIST_behavior(struct Enforcer *player_ptr, struct Character *ARSONIST_p
     if (fate_returner('c') == CONVICTED || fate_returner('M') == CONVICTED) {
         buff_char(ARSONIST_ptr, player_ptr->attr, HEROIC);
         center_screen(WIDTH, "%s\n", "Inigo is fired up and raring to fight!");
-        sleep(1);
+        sleep(WAIT);
     }
     switch (turn_no % 4) {
         case 0:
@@ -524,7 +536,7 @@ void ARSONIST_behavior(struct Enforcer *player_ptr, struct Character *ARSONIST_p
             ARSONIST_ptr->attack = maximum(1, ARSONIST_ptr->attack - 1);
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 /* LUNCHLADY_behavior : Lots of buffs/debuffs/tradeoffs */
@@ -536,7 +548,7 @@ void LUNCHLADY_behavior(struct Enforcer *player_ptr, struct Character *LUNCHLADY
     }
     if (player_ptr->attr->debuff == ALMOST_SICK || (player_ptr->attr->debuff == SICK && player_ptr->attr->buff != GUARDED && player_ptr->attr->buff != INVULNERABLE)) {
         center_screen(WIDTH, "%s\n", "*You're incredibly full after that meal*");
-        sleep(1);
+        sleep(WAIT);
         buff_char(player_ptr->attr, LUNCHLADY_ptr, FULL);
     }
     switch (turn_no % 3) {
@@ -544,7 +556,7 @@ void LUNCHLADY_behavior(struct Enforcer *player_ptr, struct Character *LUNCHLADY
             if (served == FALSE && turn_no % 6 == 0) {
                 center_screen(WIDTH, "%s\n", "*Your stomach rumbles as the aroma of food surrounds you*");
                 debuff_char(LUNCHLADY_ptr, player_ptr->attr, HUNGRY);
-                sleep(2);
+                sleep(2 * WAIT);
             }
             center_screen(WIDTH, "%s\n", "Lexa stabs your stomach with a skewer!");
             damage_dealt(LUNCHLADY_ptr, player_ptr->attr, LUNCHLADY_ptr->attack);
@@ -583,7 +595,7 @@ void LUNCHLADY_behavior(struct Enforcer *player_ptr, struct Character *LUNCHLADY
             ++LUNCHLADY_ptr->attack;
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 /* FRAUDSTER_behavior : Random chaos */
@@ -604,7 +616,7 @@ void FRAUDSTER_behavior(struct Enforcer *player_ptr, struct Character *FRAUDSTER
             if (FRAUDSTER_ptr->debuff == RESTRAINED && turn_no % 2 == 0) {
                 debuff_char(player_ptr->attr, FRAUDSTER_ptr, NONE);
                 center_screen(WIDTH, "%s\n", "*The mysterious force releases Dalia*");
-                sleep(1);
+                sleep(WAIT);
                 ++turn_no;
             }
             break;
@@ -638,13 +650,13 @@ void FRAUDSTER_behavior(struct Enforcer *player_ptr, struct Character *FRAUDSTER
                     break;
                 case 4: /* EMPEROR */
                     center_screen(WIDTH, "%s\n", "Fortuna grants you a bit of her strength.");
-                    sleep(1);
+                    sleep(WAIT);
                     center_screen(WIDTH, "%s\n", "*Your attack power increased by 1 for this battle*");
                     ++player_ptr->attr->attack;
                     break;
                 case 5: /* HIEROPHANT */
                     center_screen(WIDTH, "%s\n", "Fortuna grants you a pardon.");
-                    sleep(1);
+                    sleep(WAIT);
                     center_screen(WIDTH, "%s\n", "*Your karma increased by 5*");
                     player_ptr->attr->karma += 5;
                     break;
@@ -668,7 +680,7 @@ void FRAUDSTER_behavior(struct Enforcer *player_ptr, struct Character *FRAUDSTER
                     break;
                 case 11: /* STRENGTH */
                     center_screen(WIDTH, "%s\n", "*Everyone loses their doubt, now dying to fight!*");
-                    sleep(1);
+                    sleep(WAIT);
                     center_screen(WIDTH, "%s\n", "*Everybody's attack power increased by 1 for this battle*");
                     ++player_ptr->attr->attack;
                     ++FRAUDSTER_ptr->attack;
@@ -692,7 +704,7 @@ void FRAUDSTER_behavior(struct Enforcer *player_ptr, struct Character *FRAUDSTER
                     break;
                 case 15: /* DEVIL */
                     center_screen(WIDTH, "%s\n", "Fortuna is gathering sealed power.");
-                    sleep(1);
+                    sleep(WAIT);
                     center_screen(WIDTH, "%s\n", "*Dalia's attack power increased by 2*");
                     FRAUDSTER_ptr->attack += 2;
                     break;
@@ -741,7 +753,7 @@ void FRAUDSTER_behavior(struct Enforcer *player_ptr, struct Character *FRAUDSTER
                 roll = neutral_numbers[rand() % (sizeof(neutral_numbers) / sizeof(neutral_numbers[0]) + 1)];
             }
             center_screen(WIDTH, "%s\n", "Dalia threw a dice directly at you!");
-            sleep(1);
+            sleep(WAIT);
             damage_dealt(FRAUDSTER_ptr, player_ptr->attr, FRAUDSTER_ptr->attack);
             sprintf(message, "*%d was rolled*", roll);
             center_screen(WIDTH, "%s\n", message);
@@ -751,7 +763,7 @@ void FRAUDSTER_behavior(struct Enforcer *player_ptr, struct Character *FRAUDSTER
             }
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 /* NAPPER_behavior : Hard-hitting & has trump cards */
@@ -772,8 +784,8 @@ void NAPPER_behavior(struct Enforcer *player_ptr, struct Character *NAPPER_ptr, 
             sprintf(message, "%d gangster%s beat you to a pulp.", NAPPER_ptr->ally_attack, (NAPPER_ptr->ally_attack == 1) ? "" : "s");
         }
         center_screen(WIDTH, "%s\n", message);
-        player_ptr->attr->health -= NAPPER_ptr->ally_attack;
-        sleep(2);
+        flat_damage_dealt(NAPPER_ptr, player_ptr->attr, NAPPER_ptr->ally_attack);
+        sleep(2 * WAIT);
     }
     switch (turn_no % 3) {
         case 0:
@@ -804,12 +816,12 @@ void NAPPER_behavior(struct Enforcer *player_ptr, struct Character *NAPPER_ptr, 
             center_screen(WIDTH, "%s\n", "Lucinda is sizing you up...");
             if (turn_no == 2) {
                 center_screen(WIDTH, "%s\n", "Lucinda pulled out her phone and rapidly tapped on the screen.");
-                sleep(2);
+                sleep(2 * WAIT);
             }
             else if (turn_no == 5) {
                 center_screen(WIDTH, "%s\n", "*Three gangsters emerged and joined the fight!*");
                 buff_char(NAPPER_ptr, player_ptr->attr, SUMMON);
-                sleep(2);
+                sleep(2 * WAIT);
             }
             else {
                 center_screen(WIDTH, "%s\n", "Lucinda adapts to the battlefield.");
@@ -818,7 +830,7 @@ void NAPPER_behavior(struct Enforcer *player_ptr, struct Character *NAPPER_ptr, 
             }
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 /* BAT_behavior : Wind-up fighter */
@@ -828,7 +840,7 @@ void BAT_behavior(struct Enforcer *player_ptr, struct Character *BAT_ptr, int tu
             if (player_ptr->attr->debuff == RESTRAINED) {
                 center_screen(WIDTH, "%s\n", "*You recovered from the tasing*");
                 debuff_char(BAT_ptr, player_ptr->attr, NONE);
-                sleep(1);
+                sleep(WAIT);
             }
             BAT_ptr->attack += 2;
             center_screen(WIDTH, "%s\n", "Grischa threw a batarang past you!");
@@ -869,7 +881,7 @@ void BAT_behavior(struct Enforcer *player_ptr, struct Character *BAT_ptr, int tu
             debuff_char(BAT_ptr, player_ptr->attr, RESTRAINED);
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 /* ASSASSIN_behavior : Penalizes passive fighting style */
@@ -954,7 +966,7 @@ void ASSASSIN_behavior(struct Enforcer *player_ptr, struct Character *ASSASSIN_p
             break;
     }
     previous_health = ASSASSIN_ptr->health;
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 /* FERAL_behavior : Ambushes player, then standard fight w/ anti-debuff enemy */
@@ -973,7 +985,7 @@ void FERAL_behavior(struct Enforcer *player_ptr, struct Character *FERAL_ptr, in
             play_sound_fx("Music\\Screech.wav");
             center_screen(WIDTH, "%s\n", "Chike went on all fours.");
             buff_char(FERAL_ptr, player_ptr->attr, CONFIDENT);
-            sleep(1);
+            sleep(WAIT);
             center_screen(WIDTH, "%s\n", "Chike stored a dozen macadamia nuts inside his mouth.");
             break;
         case 2:
@@ -987,7 +999,7 @@ void FERAL_behavior(struct Enforcer *player_ptr, struct Character *FERAL_ptr, in
             }
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 enum art_styles {
@@ -1012,9 +1024,9 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
         }
         else {
             center_screen(WIDTH, "%s\n", "The white knight moves in to attack!");
-            player_ptr->attr->health -= ARTIST_ptr->ally_attack;
+            flat_damage_dealt(ARTIST_ptr, player_ptr->attr, ARTIST_ptr->ally_attack);
         }
-        sleep(2);
+        sleep(2 * WAIT);
     }
     switch (turn_no % 2) {
         case 0:
@@ -1053,7 +1065,7 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
                             health_healed(ARTIST_ptr, player_ptr->attr, 5);
                             break;
                     }
-                    sleep(1);
+                    sleep(WAIT);
                     center_screen(WIDTH, "%s\n", "Faiza exudes a gloomy aura.");
                     player_ptr->attr->karma = maximum(0, player_ptr->attr->karma - 3);
                     break;
@@ -1089,7 +1101,7 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
                             damage_dealt(ARTIST_ptr, player_ptr->attr, ARTIST_ptr->attack);
                             break;
                     }
-                    sleep(1);
+                    sleep(WAIT);
                     center_screen(WIDTH, "%s\n", "Faiza exudes a generic aura.");
                     debuff_char(player_ptr->attr, ARTIST_ptr, NONE);
                     break;
@@ -1119,7 +1131,7 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
                             damage_dealt(ARTIST_ptr, player_ptr->attr, ARTIST_ptr->attack);
                             break;
                     }
-                    sleep(1);
+                    sleep(WAIT);
                     center_screen(WIDTH, "%s\n", "Faiza exudes a scary aura.");
                     ++ARTIST_ptr->max_health;
                     break;
@@ -1146,7 +1158,7 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
                             buff_char(ARTIST_ptr, player_ptr->attr, ENLIGHTENED);
                             break;
                     }
-                    sleep(1);
+                    sleep(WAIT);
                     center_screen(WIDTH, "%s\n", "Faiza exudes a confident aura.");
                     health_healed(ARTIST_ptr, player_ptr->attr, 3);
                     break;
@@ -1177,7 +1189,7 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
                             buff_char(ARTIST_ptr, player_ptr->attr, HEROIC);
                             break;
                     }
-                    sleep(1);
+                    sleep(WAIT);
                     center_screen(WIDTH, "%s\n", "Faiza exudes a powerful aura.");
                     ++ARTIST_ptr->attack;
                     break;
@@ -1223,7 +1235,7 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
                             }
                             break;
                     }
-                    sleep(1);
+                    sleep(WAIT);
                     center_screen(WIDTH, "%s\n", "Faiza exudes a commanding aura.");
                     ARTIST_ptr->karma = maximum(0, ARTIST_ptr->karma - 3);
                     break;
@@ -1257,7 +1269,7 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
                             debuff_char(player_ptr->attr, ARTIST_ptr, NONE);
                             break;
                     }
-                    sleep(1);
+                    sleep(WAIT);
                     center_screen(WIDTH, "%s\n", "Faiza exudes an unknown aura.");
                     buff_char(player_ptr->attr, ARTIST_ptr, NONE);
                     break;
@@ -1284,12 +1296,12 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
                             break;
                         default:
                             center_screen(WIDTH, "%s\n", "Faiza is violence incarnate.");
-                            player_ptr->attr->health -= 10;
+                            flat_damage_dealt(ARTIST_ptr, player_ptr->attr, 10);
                             break;
                     }
-                    sleep(1);
+                    sleep(WAIT);
                     center_screen(WIDTH, "%s\n", "Faiza exudes a fearsome aura.");
-                    player_ptr->attr->health -= 3;
+                    flat_damage_dealt(ARTIST_ptr, player_ptr->attr, 3);
                     break;
             }
             break;
@@ -1328,7 +1340,7 @@ void ARTIST_behavior(struct Enforcer *player_ptr, struct Character *ARTIST_ptr, 
             break;
     }
     previous_your_health = player_ptr->attr->health;
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 /* POLITICIAN_behavior : Anti-buff */
@@ -1342,7 +1354,7 @@ void POLITICIAN_behavior(struct Enforcer *player_ptr, struct Character *POLITICI
     switch (turn_no % 4) {
         case 0:
             center_screen(WIDTH, "%s\n", "Nicolau stops to check a milk bottle on the table.");
-            sleep(1);
+            sleep(WAIT);
             if (turn_no % 8) {
                 center_screen(WIDTH, "%s\n", "Then, he gulps the milk down in one swig.");
                 health_healed(POLITICIAN_ptr, player_ptr->attr, 5);
@@ -1355,7 +1367,7 @@ void POLITICIAN_behavior(struct Enforcer *player_ptr, struct Character *POLITICI
         case 1:
             center_screen(WIDTH, "%s\n", "Nicolau flexes his muscles with a wide grin.");
             buff_char(POLITICIAN_ptr, player_ptr->attr, RIVALED);
-            sleep(1);
+            sleep(WAIT);
             break;
         case 2:
             center_screen(WIDTH, "%s\n", "Nicolau moves in to take a bite out of your neck!");
@@ -1368,7 +1380,7 @@ void POLITICIAN_behavior(struct Enforcer *player_ptr, struct Character *POLITICI
             POLITICIAN_ptr->attack = maximum(1, POLITICIAN_ptr->attack - 1);
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
  
 /* HACKER_behavior : Strength depends on degree of interruption from player */
@@ -1423,7 +1435,7 @@ void HACKER_behavior(struct Enforcer *player_ptr, struct Character *HACKER_ptr, 
             }
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 void COP_behavior(struct Enforcer *player_ptr, struct Enforcer *COP_ptr, int turn_no) {
@@ -1441,7 +1453,7 @@ void COP_behavior(struct Enforcer *player_ptr, struct Enforcer *COP_ptr, int tur
             COP_ptr->attack_cd = ATTACK_CD;
             COP_ptr->sword_points = 0;
             center_screen(WIDTH, "%s\n", "You got ravaged.");
-            player_ptr->attr->health -= scaling;
+            flat_damage_dealt(COP_ptr->attr, player_ptr->attr, scaling);
         }
         // Able to defeat by DAMAGE
         else if (has_item(&first_enemy_item, DAMAGE) && post_damage(COP_ptr->attr, player_ptr->attr, 2 * COP_ptr->attr->attack) >= player_ptr->attr->health && COP_ptr->attr->karma >= DAMAGE_COST) {
@@ -1454,12 +1466,12 @@ void COP_behavior(struct Enforcer *player_ptr, struct Enforcer *COP_ptr, int tur
             damage_dealt(COP_ptr->attr, player_ptr->attr, COP_ptr->attr->attack);
             increment_sword(COP_ptr);
             if (COP_ptr->attr->sword_buff == DEMONIC) {
-                COP_ptr->attr->karma += (pow(2, scaling) / 5);
+                COP_ptr->attr->karma +=(total_fate(CONVICTED) / 2);
             }
             if (player_ptr->attr->buff == SUMMON) {
                 center_screen(WIDTH, "%s\n", "Yosef slams his fist down!");
-                player_ptr->attr->health -= COP_ptr->attr->ally_attack;
-                sleep(2);
+                flat_damage_dealt(COP_ptr->attr, player_ptr->attr, COP_ptr->attr->ally_attack);
+                sleep(2 * WAIT);
             }
         }
         // Negate combo attack
@@ -1472,11 +1484,11 @@ void COP_behavior(struct Enforcer *player_ptr, struct Enforcer *COP_ptr, int tur
             item_used = TRUE;
         }
         // In danger: Try to survive
-        else if (COP_ptr->attr->health < COP_ptr->attr->max_health / 2.5 && has_item(&first_item, MOON) && COP_ptr->attr->karma >= MOON_COST && COP_ptr->attr->buff != REGEN && COP_ptr->attr->buff != SUMMON) {
+        else if (COP_ptr->attr->health < COP_ptr->attr->max_health / 2.5 && has_item(&first_enemy_item, MOON) && COP_ptr->attr->karma >= MOON_COST && COP_ptr->attr->buff != REGEN && COP_ptr->attr->buff != SUMMON) {
             item_turn(has_item(&first_enemy_item, MOON), COP_ptr, player_ptr->attr, turn_no);
             item_used = TRUE;
         }
-        else if (COP_ptr->attr->health < COP_ptr->attr->max_health / 3 && has_item(&first_item, HEAL) && COP_ptr->attr->karma >= HEAL_COST) {
+        else if (COP_ptr->attr->health < COP_ptr->attr->max_health / 3 && has_item(&first_enemy_item, HEAL) && COP_ptr->attr->karma >= HEAL_COST) {
             item_turn(has_item(&first_enemy_item, HEAL), COP_ptr, player_ptr->attr, turn_no);
             item_used = TRUE;
         }
@@ -1491,19 +1503,19 @@ void COP_behavior(struct Enforcer *player_ptr, struct Enforcer *COP_ptr, int tur
                 COP_ptr->attack_cd = ATTACK_CD;
                 COP_ptr->sword_points = 0;
                 center_screen(WIDTH, "%s\n", "You got ravaged.");
-                player_ptr->attr->health -= scaling;
+                flat_damage_dealt(COP_ptr->attr, player_ptr->attr, scaling);
             }
             else if (COP_ptr->sword_points != MAX_SWORD) {
                 play_sound_fx("Music\\Thud.wav");
                 damage_dealt(COP_ptr->attr, player_ptr->attr, COP_ptr->attr->attack);
                 increment_sword(COP_ptr);
                 if (COP_ptr->attr->sword_buff == DEMONIC) {
-                    COP_ptr->attr->karma += (pow(2, scaling) / 5);
+                    COP_ptr->attr->karma += (total_fate(CONVICTED) / 2);
                 }
                 if (COP_ptr->attr->buff == SUMMON) {
                     center_screen(WIDTH, "%s\n", "Yosef slams his fist down!");
-                    player_ptr->attr->health -= COP_ptr->attr->ally_attack;
-                    sleep(2);
+                    flat_damage_dealt(COP_ptr->attr, player_ptr->attr, COP_ptr->attr->ally_attack);
+                    sleep(2 * WAIT);
                 }
             }
             else {
@@ -1524,12 +1536,12 @@ void COP_behavior(struct Enforcer *player_ptr, struct Enforcer *COP_ptr, int tur
                     damage_dealt(COP_ptr->attr, player_ptr->attr, COP_ptr->attr->attack);
                     increment_sword(COP_ptr);
                     if (COP_ptr->attr->sword_buff == DEMONIC) {
-                        COP_ptr->attr->karma += (pow(2, scaling) / 5);
+                        COP_ptr->attr->karma += (total_fate(CONVICTED) / 2);
                     }
                     if (COP_ptr->attr->buff == SUMMON) {
                         center_screen(WIDTH, "%s\n", "Yosef slams his fist down!");
-                        player_ptr->attr->health -= COP_ptr->attr->ally_attack;
-                        sleep(2);
+                        flat_damage_dealt(COP_ptr->attr, player_ptr->attr, COP_ptr->attr->ally_attack);
+                        sleep(2 * WAIT);
                     }
                 }
             }
@@ -1540,7 +1552,7 @@ void COP_behavior(struct Enforcer *player_ptr, struct Enforcer *COP_ptr, int tur
         COP_ptr->signature_cd = maximum(0, COP_ptr->signature_cd - 1);
         COP_ptr->defense_cd = maximum(0, COP_ptr->defense_cd - 1);
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 // Generate unsigned integer representing puppets normal buff
@@ -1594,11 +1606,11 @@ void JUDGE_behavior(struct Enforcer *player_ptr, struct Character *JUDGE_ptr, in
             center_screen(WIDTH, "%s\n", "The puppet attacks!");
             damage_dealt(JUDGE_ptr, player_ptr->attr, JUDGE_ptr->ally_attack);
         }
-        sleep(2);
+        sleep(2 * WAIT);
     }
     else {
         center_screen(WIDTH, "%s\n", "A grey storm wears away at you.");
-        player_ptr->attr->health--;
+        flat_damage_dealt(JUDGE_ptr, player_ptr->attr, 1);
     }
     /* JUDGE behavior */
     switch (turn_no % 6) {
@@ -1633,17 +1645,20 @@ void JUDGE_behavior(struct Enforcer *player_ptr, struct Character *JUDGE_ptr, in
                     break;
                 case Yes:
                     center_screen(WIDTH, "%s", "Hah");
-                    sleep(1);
+                    sleep(WAIT);
                     printf("hah");
-                    sleep(1);
+                    sleep(WAIT);
                     printf("hah.\n");
-                    sleep(1);
+                    sleep(WAIT);
                     center_screen(WIDTH, "%s\n", "A divine light shines between you two before exploding into a star.");
-                    player_ptr->attr->health -= maximum(1, (7 * JUDGE_ptr->attack) - player_ptr->attr->karma / 5);
-                    JUDGE_ptr->health -= maximum(1, (10 * JUDGE_ptr->attack) - JUDGE_ptr->karma / 5);
+                    flat_damage_dealt(JUDGE_ptr, player_ptr->attr, maximum(1, (7 * JUDGE_ptr->attack) - player_ptr->attr->karma / 5));
+                    flat_damage_dealt(JUDGE_ptr, JUDGE_ptr, maximum(1, (10 * JUDGE_ptr->attack) - JUDGE_ptr->karma / 5));
                     break;
                 case No:
                     center_screen(WIDTH, "%s\n", "It seems to frown straight at you.");
+                    sleep(WAIT);
+                    center_screen(WIDTH, "%s\n", "It regenerates itself instead with an advanced powder.");
+                    health_healed(JUDGE_ptr, player_ptr->attr, JUDGE_ptr->max_health / 10);
                     break;
             }
             break;
@@ -1663,7 +1678,7 @@ void JUDGE_behavior(struct Enforcer *player_ptr, struct Character *JUDGE_ptr, in
             }
             else {
                 center_screen(WIDTH, "%s\n", "It decides its verdict...");
-                sleep(1);
+                sleep(WAIT);
                 if (3 * JUDGE_ptr->health < player_ptr->attr->health) {
                     // Swap health and karma
                     center_screen(WIDTH, "%s\n", "It puts forth its balance and tips it to one side.");
@@ -1691,7 +1706,8 @@ void JUDGE_behavior(struct Enforcer *player_ptr, struct Character *JUDGE_ptr, in
             break;
         case 4:
             center_screen(WIDTH, "%s\n", "It goes on a rampage.");
-            player_ptr->attr->health -= JUDGE_ptr->attack;
+            flat_damage_dealt(JUDGE_ptr, player_ptr->attr, JUDGE_ptr->attack);
+                    
             s_debuff_char(JUDGE_ptr, player_ptr->attr, NONE);
             break;
         case 5:
@@ -1706,24 +1722,27 @@ void JUDGE_behavior(struct Enforcer *player_ptr, struct Character *JUDGE_ptr, in
                     break;
                 case Yes:
                     center_screen(WIDTH, "%s\n", "A shadowy figure approaches you two with a medical saw.");
-                    sleep(1);
+                    sleep(WAIT);
                     if (!extra_returner('+', SURGERY)) {
                         center_screen(WIDTH, "%s\n", "The operation has been complete. The figure leapt into the skies.");
                         health_healed(player_ptr->attr, JUDGE_ptr, player_ptr->alignment);
-                        health_healed(JUDGE_ptr, player_ptr->attr, JUDGE_ptr->max_health / 4);
+                        health_healed(JUDGE_ptr, player_ptr->attr, JUDGE_ptr->max_health / 10);
                     }
                     else {
                         center_screen(WIDTH, "%s\n", "The operation was a failure. The figure crawled away.");
-                        sleep(1);
+                        sleep(WAIT);
                     }
                     break;
                 case No:
-                    center_screen(WIDTH, "%s\n", "Let us continue then.");
+                    center_screen(WIDTH, "%s\n", "Its expression is completely static. It glares at you.");
+                    sleep(WAIT);
+                    center_screen(WIDTH, "%s\n", "Its pressure caused you to lose focus.");
+                    buff_char(player_ptr->attr, JUDGE_ptr, NONE);
                     break;
             }
             break;
     }
-    sleep(3);
+    sleep(3 * WAIT);
 }
 
 /* intro : cues dialogue that introduces the enemy - comments will try to explain each line of dialogue */
@@ -1985,10 +2004,10 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                 character_line(symbol, "We'll fly ya out again, so don't worry wishing for that.");
                 character_line('|', "Allow me to give you some suggestions. These are pretty plausible wishes, I'd say. First, you could ask for\n"
                                     "some lessons on fighting to get you beefed up. Second, you could ask for a fight with the siblings, so it's\n"
-                                    "possible to convict them. Third, you could ask for them to permanently cancel this \"game show\". Finally, you\n"
-                                    "could ask for the siblings to seriously fight one another.");
-                printf("Wish for... ((l = lessons) / (f = fight) / (c = cancel) / (s = sibling fight))\n");
-                while ((keystr = getaction(Controller)) != _EOF && keystr != Lessons && keystr != Fight && keystr != Cancel && keystr != Sibling) {
+                                    "possible to convict them. Third, you could ask for them to permanently cancel this \"game show\". Maybe you\n"
+                                    "could ask for the siblings to seriously fight one another. Finally, there's the boring choice where you ask for money. So?");
+                printf("Wish for... ((l = lessons) / (f = fight) / (c = cancel) / (s = sibling fight) / (m = money))\n");
+                while ((keystr = getaction(Controller)) != _EOF && keystr != Lessons && keystr != Fight && keystr != Cancel && keystr != Sibling && keystr != Monies) {
                     ;
                 }
                 switch (keystr) {
@@ -1996,7 +2015,7 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                         extra_store(symbol, TRAINED);
                         character_line('^', "Alright. I want you to teach me how to fight like a pro. This is the serious stuff.");
                         character_line(symbol, "Defo! I'll show ya the ropes!");
-                        sleep(2);
+                        sleep(2 * WAIT);
                         character_line(symbol, "And that's all ya gotta know. Now, I'll fly ya back out where we met.");
                         character_line('|', "Yeah, you look ready to go. You look slightly stronger now! Good on ya.");
                         keystr = Yes;
@@ -2044,7 +2063,7 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                         character_line('|', "She is.");
                         character_line('^', "Will you do it then? Fight your brother to the death, and crown yourself as a WINNER!");
                         character_line(symbol, "He's in his room. Time to cream him to the floor!");
-                        sleep(3);
+                        sleep(3 * WAIT);
                         character_line(symbol, "G'day, brother.");
                         character_line('/', "I take it he's the winner? What's the wish?");
                         character_line(symbol, "For us to slug it out in a game! I challenge ya, brother.");
@@ -2059,7 +2078,7 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                         character_line(symbol, "I love how it's never a bore with ya around!");
                         character_line(symbol, "Ya look mad as a cut snake! C'mon and actually try!");
                         character_line(symbol, "Give it another burl. Ya might hit me yet!");
-                        sleep(1);
+                        sleep(WAIT);
                         character_line('^', "They're stalling or something. It's been like 45 minutes already.");
                         character_line('/', "I'm rooted. ... No more shots left!");
                         character_line(symbol, "Is that so? It's so boring without that gun, ya bastard.");
@@ -2068,6 +2087,15 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                         character_line('^', "Congratulations on your flawless victory.");
                         character_line(symbol, "He had buckley's chance!");
                         character_line('^', "Now that that's done, I'm feeling good enough to fly back!");
+                        keystr = Yes;
+                        break;
+                    case Monies:
+                        extra_store('\\', RICH);
+                        character_line('^', "What I really want is money.");
+                        character_line(symbol, "There. Ya ask and ya receive.");
+                        character_line('|', "How boring indeed!");
+                        character_line(symbol, "Well, champion, time to fly on back.");
+                        update_balance(&first_item, 20);
                         keystr = Yes;
                         break;
                     case _EOF:
@@ -2169,7 +2197,7 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                 character_line('^', "It seems like we've got time to kill. Let's take a little tour around the island.");
                 character_line('|', "Feel free to take a lunch break. It's been some time since you've last ate.");
                 character_line('^', "Sure, the food here looks deceptively tasty.");
-                sleep(1);
+                sleep(WAIT);
                 character_line('^', "... And it is. It's delectable. Actually so good.");
                 character_line('|', "Good on you. If you're done stuffing yourself like a pig, hustle on outside!");
                 character_line('^', "I'm going, I'm going! ... Still seems a bit desolate here save some birds over there.");
@@ -2226,11 +2254,11 @@ int intro(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                 character_line('|', POLITICIAN_intro_4);
                 character_line('^', "Let's check for more people on the island. There might be more.");
                 printf("You search the island for more contestants. You find nobody else in your search.\n");
-                sleep(1);
+                sleep(WAIT);
                 character_line('|', "There's nothing to it. We'll just have to wait until the game begins.");
                 character_line('^', "So it's a waiting game, huh?");
                 printf("You remain on the island until a bell rings loudly.\n");
-                sleep(1);
+                sleep(WAIT);
                 return TRUE;
             }
             break;
@@ -2338,14 +2366,15 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                     character_line('|', "Well, he's fancy with his tongue, just like a house cat! Your shoes are looking lustrous.");
                     character_line(symbol, "And I'm done! A job complete is a good job, I always say.");
                     character_line('^', "Not bad, kid. How much?");
-                    character_line(symbol, "A single quarter will suffice.");
-                    character_line('^', "Alright. I think I've got some quarters on me. There you go.");
+                    character_line(symbol, "A single coin will suffice.");
+                    character_line('^', "Alright. I think I've got some coins on me. There you go.");
                     character_line(symbol, "Thanks! Have a nice day!");
                     character_line('|', "How about it? Did he make your day or what? You're marked now for surgery. Great and fantastic!");
+                    update_balance(&first_item, -1);
                     break;
                 case No:
                     character_line('^', "No.");
-                    character_line(symbol, "It'd only cost you a quarter! How about it?");
+                    character_line(symbol, "It'd only cost you a coin! How about it?");
                     character_line('^', "No means no. I waste your time and now, you waste mine? That's not nice.");
                     character_line(symbol, "It was but an offer, sir. Whatever, I'm off.");
                     character_line('|', "He's gone! Looking for oblivious victims, eh? Why didn't you stop him?");
@@ -2356,7 +2385,7 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             break;
         case '+':
-            if (fate_returner('+') == ALERTED) {
+            if (extra_returner('c', ALERTED)) {
                 character_line('^', "My apologies, but I haven't seen any boys outside.");
                 character_line(symbol, "Oh. I'm afraid I have to close early today, sir. He was like a son to me.");
                 character_line('^', "I'm sorry to have heard that.");
@@ -2373,64 +2402,72 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                     case Yes:
                         player_ptr->alignment++;
                         character_line('^', "Yeah, I am. How much is it again?");
-                        character_line(symbol, "It's always a clean $40. Make sure to take off your shoes, and I'll be with you in a bit.");
-                        character_line('^', "Yep. I'll just chill over here in the meantime.");
-                        character_line('|', "Seriously? Listen to my advice, man!");
-                        character_line('^', "Shush it. I just really needed a haircut. I mean, look at me!");
-                        character_line('|', "True. Looking at you neck up, you have a striking resemblance to bigfoot!");
-                        character_line('^', "That's a bit harsh.");
-                        character_line('|', "This is boring.");
-                        character_line('^', "Look at the walls. Those paintings are very oriental. The flowers complement them well.\n"
-                                            "Those masks on the wall are pretty as well. It's a demon, a fox, and a boar.");
-                        character_line(symbol, "Alright. We're ready to start our session.");
-                        if (extra_returner('c', MARKED)) {
-                            extra_store(symbol, SURGERY);
-                            character_line('^', "Great. Just make my ha-");
-                            character_line('|', "What a great partner I've been paired with, knocked out from a random pipe.");
-                            character_line('|', "Hey, wake up. He's going to drug you! Okay then, don't say I didn't warn you.");
-                            character_line(symbol, "Great, you're finally here, Cue. It's been a while since we've last got a hit.");
-                            character_line('c', "Oh, it's him. He randomly stopped me and agreed to have his shoes licked. I was kind of scared...");
-                            character_line(symbol, "He's armed. He didn't hurt you, did he? Take those items to the couch over there.\n"
-                                                           "Don't worry. We'll give it back to him after we release him.");
-                            character_line('c', "I did it. What's the operation, another test case number 5 surgery?");
-                            character_line(symbol, "I was thinking about something else. Here, this is what we'll do. Low chance of fatality.");
-                            character_line('c', "That's relieving to hear. Operation start!");
-                            character_line('|', "What are they doing to you? That's only slightly disturbing. Here's to your health!");
-                            character_line(symbol, "Operation successful. You did a good job, Cue! I've got some new findings, too.");
-                            character_line('c', "Glad to hear that. Is the man okay?");
-                            character_line(symbol, "He made it through all the incisions. Once he wakes up, he'll lose his memory of his visit.\n"
-                                                           "I'll just place him outside by the garbage bins. Right, here's your share before I forget.");
-                            character_line('c', "I'm going back now, sir. Bye.");
-                            character_line(symbol, "Have a good day, Cue.");
-                            sleep(3);
-                            character_line('^', "Ughhh, where am I?");
-                            character_line('|', "Finally operational! You're by the trash, where you belong. This is your home.");
-                            character_line('^', "That's not right... I remember that much at least.");
-                            character_line('|', "You fell into their trap! You were operated on by a barber or maybe you wanted that?");
-                            character_line('^', "My muscles are tingling, my body feels very peculiar.");
-                            center_screen(WIDTH, "%s\n", "Your attack power increased by 1.");
-                            center_screen(WIDTH, "%s\n", "Your maximum health increased by 5.");
-                            ++player_ptr->attr->attack;
-                            player_ptr->attr->max_health += 5;
-                            player_ptr->attr->health += 5;
-                            sleep(5);
+                        character_line(symbol, "It's always cheap. For you, it'll be 2 coins. Make sure to take off your shoes, and I'll be with you in a bit.");
+                        if (return_balance(&first_item) >= 2) {
+                            update_balance(&first_item, -2);
+                            character_line('^', "Yep. I'll just chill over here in the meantime.");
+                            character_line('|', "Seriously? Listen to my advice, man!");
+                            character_line('^', "Shush it. I just really needed a haircut. I mean, look at me!");
+                            character_line('|', "True. Looking at you neck up, you have a striking resemblance to bigfoot!");
+                            character_line('^', "That's a bit harsh.");
+                            character_line('|', "This is boring.");
+                            character_line('^', "Look at the walls. Those paintings are very oriental. The flowers complement them well.\n"
+                                                "Those masks on the wall are pretty as well. It's a demon, a fox, and a boar.");
+                            character_line(symbol, "Alright. We're ready to start our session.");
+                            if (extra_returner('c', MARKED)) {
+                                extra_store(symbol, SURGERY);
+                                character_line('^', "Great. Just make my ha-");
+                                character_line('|', "What a great partner I've been paired with, knocked out from a random pipe.");
+                                character_line('|', "Hey, wake up. He's going to drug you! Okay then, don't say I didn't warn you.");
+                                character_line(symbol, "Great, you're finally here, Cue. It's been a while since we've last got a hit.");
+                                character_line('c', "Oh, it's him. He randomly stopped me and agreed to have his shoes licked. I was kind of scared...");
+                                character_line(symbol, "He's armed. He didn't hurt you, did he? Take those items to the couch over there.\n"
+                                                       "Don't worry. We'll give it back to him after we release him.");
+                                character_line('c', "I did it. What's the operation, another test case number 5 surgery?");
+                                character_line(symbol, "I was thinking about something else. Here, this is what we'll do. Low chance of fatality.");
+                                character_line('c', "That's relieving to hear. Operation start!");
+                                character_line('|', "What are they doing to you? That's only slightly disturbing. Here's to your health!");
+                                character_line(symbol, "Operation successful. You did a good job, Cue! I've got some new findings, too.");
+                                character_line('c', "Glad to hear that. Is the man okay?");
+                                character_line(symbol, "He made it through all the incisions. Once he wakes up, he'll lose his memory of his visit.\n"
+                                                       "I'll just place him outside by the garbage bins. Right, here's your share before I forget.");
+                                character_line('c', "I'm going back now, sir. Bye.");
+                                character_line(symbol, "Have a good day, Cue.");
+                                sleep(3 * WAIT);
+                                character_line('^', "Ughhh, where am I?");
+                                character_line('|', "Finally operational! You're by the trash, where you belong. This is your home.");
+                                character_line('^', "That's not right... I remember that much at least.");
+                                character_line('|', "You fell into their trap! You were operated on by a barber or maybe you wanted that?");
+                                character_line('^', "My muscles are tingling, my body feels very peculiar.");
+                                center_screen(WIDTH, "%s\n", "Your attack power increased by 1.");
+                                center_screen(WIDTH, "%s\n", "Your maximum health increased by 5.");
+                                ++player_ptr->attr->attack;
+                                player_ptr->attr->max_health += 5;
+                                player_ptr->attr->health += 5;
+                                sleep(3 * WAIT);
+                            }
+                            else {
+                                character_line('^', "Great. Just make my hair look nice, not like the mess it is now.");
+                                character_line(symbol, "Of course, master. Relax, please.");
+                                character_line('^', "Those masks over there are veyr cool. Could you tell me more about them?");
+                                character_line(symbol, "Oh yes. The red mask is an oni mask, a creature with horns. Their hair is usually crazy, so\n"
+                                                       "nobody requests that hair \"style\". The meaning of the oni depends on your culture.\n"
+                                                       "Some people believe the oni is wicked and a sign of misfortune to come. Others think of the oni\n"
+                                                       "as a guardian that prevents bad luck. They're completely different representations, yes?");
+                                character_line('^', "Yeah. That's kind of weird.");
+                                character_line(symbol, "Personally, I think of the oni as an unlucky parent. They provide for their child or other loved ones.\n"
+                                                       "However, only the worst of people become oni. The oni may care for the child, but the child must\n"
+                                                       "never be like the oni. It's a complicated representation, like it combined all of them together.");
+                                character_line('^', "Yeah. It's an interesting take, that's for sure.");
+                                character_line(symbol, "There we go! We're done, master. Take a look.");
+                                character_line('^', "Wow, I look much better. Thank you very much, and here's your $40.");
+                                character_line(symbol, "Thank you for your time. Don't hesitate to come back for another trim.");
+                            }
                         }
                         else {
-                            character_line('^', "Great. Just make my hair look nice, not like the mess it is now.");
-                            character_line(symbol, "Of course, master. Relax, please.");
-                            character_line('^', "Those masks over there are veyr cool. Could you tell me more about them?");
-                            character_line(symbol, "Oh yes. The red mask is an oni mask, a creature with horns. Their hair is usually crazy, so\n"
-                                                           "nobody requests that hair \"style\". The meaning of the oni depends on your culture.\n"
-                                                           "Some people believe the oni is wicked and a sign of misfortune to come. Others think of the oni\n"
-                                                           "as a guardian that prevents bad luck. They're completely different representations, yes?");
-                            character_line('^', "Yeah. That's kind of weird.");
-                            character_line(symbol, "Personally, I think of the oni as an unlucky parent. They provide for their child or other loved ones.\n"
-                                                           "However, only the worst of people become oni. The oni may care for the child, but the child must\n"
-                                                           "never be like the oni. It's a complicated representation, like it combined all of them together.");
-                            character_line('^', "Yeah. It's an interesting take, that's for sure.");
-                            character_line(symbol, "There we go! We're done, master. Take a look.");
-                            character_line('^', "Wow, I look much better. Thank you very much, and here's your $40.");
-                            character_line(symbol, "Thank you for your time. Don't hesitate to come back for another trim.");
+                            character_line('^', "No can do. I'm broke as a joke.");
+                            character_line(symbol, "Ah, how unfortunate. I have to ask you to leave now. Come back soon...");
+                            character_line('|', "Huh. Whatever happened to your money? I swear you had some.");
                         }
                         break;
                     case No:
@@ -2549,7 +2586,7 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                 character_line(symbol, "Is there a fire extinguisher somewhere here? Please? I'm trapped in here, help!");
                 character_line('|', "This is why we take precautions when cooking! Hurry up and find something to put the fire out!");
                 character_line('^', "I'm trying, okay?! Don't panic, don't panic...");
-                sleep(1);
+                sleep(WAIT);
             }
             else {
                 character_line('|', "Well, that was a waste of time. You're managing to meet your quota still, right?");
@@ -2603,7 +2640,7 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                     }
                     clrscr();
                     printf("^| %.1f - %.1f |? Bo5\n", your_score, foe_score);   // Print final score
-                    sleep(3);
+                    sleep(3 * WAIT);
                     if (your_score > foe_score) {
                         character_line(symbol, "Congrats, you won!");
                         character_line('^', "Good games.");
@@ -2611,7 +2648,7 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                         character_line(symbol, "That was fun! Here, take this. I've gotta run. May luck be by your side always!");
                         center_screen(WIDTH, "%s\n", "You got a shard of a broken die from Dalia.");
                         add_item(&first_item, STRENGTH);
-                        sleep(3);
+                        sleep(3 * WAIT);
                     }
                     else if (your_score < foe_score) {
                         character_line('^', "You won. Congratulations on your victory.");
@@ -2641,11 +2678,11 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                                 ++foe_score;
                                 break;
                         }
-                        sleep(2);
+                        sleep(2 * WAIT);
                     }
                     clrscr();
                     printf("^| %d - %d |? Bo7\n", (int) your_score, (int) foe_score);   // Print final score
-                    sleep(3);
+                    sleep(3 * WAIT);
                     if (your_score > foe_score) {
                         character_line(symbol, "Congrats on your win!");
                         character_line('^', "Good games.");
@@ -2654,7 +2691,7 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                         character_line(symbol, "Please take this gift. Anyway, I've gotta run. May luck be by your side always!");
                         center_screen(WIDTH, "%s\n", "You got a shard of a broken die from Dalia.");
                         add_item(&first_item, TEMPER);
-                        sleep(3);
+                        sleep(3 * WAIT);
                     }
                     else {
                         character_line('^', "You won. Congratulations on your victory.");
@@ -2686,12 +2723,12 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                             center_screen(WIDTH, "%s\n", "You find a shard of a broken die on the floor.");
                             fate_store(symbol, CONVICTED);
                             add_item(&first_item, JUDGEMENT);
-                            sleep(3);
+                            sleep(3 * WAIT);
                         }
                         break;
                     }
                     printf("^| %d - %d |?\n", (int) your_score, (int) foe_score);
-                    sleep(3);
+                    sleep(3 * WAIT);
                     break;
                 case _EOF:
                     quit();
@@ -2743,7 +2780,7 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                             character_line(symbol, "Too right! Come along, I'll fly ya to the lobby.");
                             character_line('^', "Right behind you.");
                             character_line(' ', "(Further down the alley was a jet plane. I sat near the back of the plane.)");
-                            sleep(2);
+                            sleep(2 * WAIT);
                             character_line('|', "It's been 16 hours on her jet, and you're asleep, seriously? Isn't it REALLY NOISY here?\n"
                                                 "Just a tad cramped too, but it's still only you and her inside.");
                             character_line(symbol, "Oi, we're here. Wake up, ay!");
@@ -2767,6 +2804,13 @@ void decline(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                     character_line(symbol, "Sorry, ya can't join. Review the conditions again, please!");
                     character_line('^', "At least tell me where I can find this information. And she's gone already, really?");
                     character_line('|', "Looks like you don't strike her as a strong fellow. Better luck next time!");
+                    character_line('^', "Wait a minute. She forgot something. Look over here.");
+                    character_line('|', "A jar of life essence. Goodness me!");
+                    character_line('^', "I'll be taking this. She must've intended to leave this behind for us. Out of pity.");
+                    character_line('|', "Aw, she feels sorry for us! Well, let's celebrate consequently!");
+                    center_screen(WIDTH, "%s\n", "You now have a jar of life essence.");
+                    add_item(&first_item, PILLS);
+                    sleep(3 * WAIT);
                 }
             }
             break;
@@ -2817,7 +2861,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             center_screen(WIDTH, "%s", "You find a pair of boots where the boy last stood.");
             add_item(&first_item, RUSH);
-            sleep(3);
+            sleep(3 * WAIT);
             break;
         case '+':
             if (extra_returner('+', ALERTED)) {
@@ -2845,7 +2889,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             center_screen(WIDTH, "%s", "You search the barbershop and obtained a fantastical elixir.");
             add_item(&first_item, HEAL);
-            sleep(3);
+            sleep(3 * WAIT);
             break;
         case 'M':
             character_line('^', "You're done for. Fire ants are no match for me.");
@@ -2859,7 +2903,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             center_screen(WIDTH, "%s", "You search the suitcase and obtained a pretty shield.");
             add_item(&first_item, GUARD);
-            sleep(3);
+            sleep(3 * WAIT);
             break;
         case '%':
             character_line('^', "Your fighting spirit has dissipated. This is checkmate.");
@@ -2875,9 +2919,9 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             center_screen(WIDTH, "%s\n", "You find a large bottle of alcohol that is rightfully yours now.");
             add_item(&first_item, RECOVER);
-            sleep(3);
+            sleep(3 * WAIT);
             center_screen(WIDTH, "%s\n", "You notice a man standing by Severino's body who seemed to have suddenly popped up.");
-            sleep(3);
+            sleep(3 * WAIT);
             break;
         case '$':
             character_line('^', "Not so tough when you're in an actual fight where your foe can fight back.");
@@ -2887,7 +2931,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             character_line('|', "He depends on his father too much. Think on your own and depend on yourself.");
             center_screen(WIDTH, "%s\n", "You find all your items in Nemo's handbag, which you take as well.");
             add_item(&first_item, TRICK);
-            sleep(3);
+            sleep(3 * WAIT);
             break;
         case '*':
             character_line('^', "Your flames did not fear me away. You've lost.");
@@ -2902,7 +2946,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             center_screen(WIDTH, "%s\n", "You find a hot arrowhead in Inigo's toolbox, which you grab.");
             add_item(&first_item, FIRE);
-            sleep(3);
+            sleep(3 * WAIT);
             if (extra_returner('*', TRAILED)) {
                 character_line('|', "Some of it burned down, huh. Unlucky.");
                 character_line('^', "Yeah. Time to go, it's not my job to clean up this mess.");
@@ -2923,7 +2967,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             if (player_ptr->attr->buff == SICK || player_ptr->attr->debuff == ALMOST_SICK) {
                 center_screen(WIDTH, "%s\n", "You used the shelter's restroom for a good 15 minutes before relief.");
-                sleep(3);
+                sleep(3 * WAIT);
                 center_screen(WIDTH, "%s\n", "You discover a cornucopia in the restroom storing poisons.");
                 add_item(&first_item, FAMINE);
             }
@@ -2931,14 +2975,14 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                 center_screen(WIDTH, "%s\n", "You discover a cornucopia in the fridge bearing safe food items.");
                 add_item(&first_item, FEAST);
             }
-            sleep(3);
+            sleep(3 * WAIT);
             if (extra_returner('*', TRAILED)) {
                 character_line('^', "Woah, there's a huge fire in here! Is there a fire extinguisher in here?!");
                 character_line('|', "Calm down first. Go outside for help before you suffocate in this hell!");
                 character_line('^', "Okay, I'll do that. ...There's nothing here that can help!");
                 character_line('|', "I told you, go outside. Who knows how fast this fire will spread.");
                 character_line('^', "Got it. Stay calm. I can get through this...");
-                sleep(1);
+                sleep(WAIT);
             }
             break;
         case '?':
@@ -2956,7 +3000,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             center_screen(WIDTH, "%s\n", "You picked up the broken die, reduced to a shard.");
             add_item(&first_item, MOON);
-            sleep(3);
+            sleep(3 * WAIT);
             break;
         case 'C':
             if (enemy_ptr->buff == SUMMON) {
@@ -2983,7 +3027,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             center_screen(WIDTH, "%s\n", "You pick up the baby doll, now morphed in form by your sword.");
             add_item(&first_item, GOLEM);
-            sleep(3);
+            sleep(3 * WAIT);
             break;
         case '@':
             character_line(symbol, "Gah! What a monster you are...");
@@ -3002,7 +3046,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             center_screen(WIDTH, "%s\n", "You search the Grimobile, picking up several batarangs.");
             add_item(&first_item, RANG);
-            sleep(3);
+            sleep(3 * WAIT);
             break;
         case '\\':
             if (extra_returner('\\', FOUGHT)) {
@@ -3027,7 +3071,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             }
             center_screen(WIDTH, "%s\n", "You picked up some bullets that Matilda dropped.");
             add_item(&first_item, BULLET);
-            sleep(3);
+            sleep(3 * WAIT);
             break;
         case '#':
             character_line(symbol, "PYOW BOOM! Grr...");
@@ -3042,7 +3086,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             character_line('|', "Yep, sure. Come over here! There might not be any monkeys, but their hunters may be in here!");
             center_screen(WIDTH, "%s\n", "You obtain a stone charm that fell out of the tree branches above.");
             add_item(&first_item, DRAIN);
-            sleep(3);
+            sleep(3 * WAIT);
             break;
         case '&':
             character_line(symbol, "Ugh... Ow!");
@@ -3055,7 +3099,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             character_line('|', "I thought you'd never ask! Here goes! We'll leave your chaotic drawing there to rot. You're welcome.");
             center_screen(WIDTH, "%s\n", "You grab the fallen feathered pen by the canvas.");
             add_item(&first_item, UNCENSOR);
-            sleep(3);
+            sleep(3 * WAIT);
             break;
         case '!':
             character_line('^', "With a bang! Stop the gang! It's over! You lecher!");
@@ -3083,7 +3127,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             character_line('^', "Fine.");
             center_screen(WIDTH, "%s\n", "You decide to keep a few containers of milk.");
             add_item(&first_item, MILK);
-            sleep(3);
+            sleep(3 * WAIT);
             break;
         case '/':
             character_line(symbol, "How'd you manage to beat us?! You're a wicked demon, man! Who'd wish for that rubbish?!");
@@ -3096,7 +3140,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
             character_line(symbol, "Crikeyyyyyyyyyyyy!");
             center_screen(WIDTH, "%s\n", "You find a handwritten drawing of something you can use.");
             add_item(&first_item, ALCHEMY);
-            sleep(3);
+            sleep(3 * WAIT);
             break;
         case 'V':
             character_line(symbol, "Hah...hah...");
@@ -3125,7 +3169,7 @@ void finished(struct Character *enemy_ptr, struct Enforcer *player_ptr) {
                     character_line('|', "He left a broken sword on the ground. We might be able to use that. Let's grab it.");
                     center_screen(WIDTH, "%s\n", "You picked up Algoslog's broken sword from the ground.");
                     add_item(&first_item, DUE_RECOMPENSE);
-                    sleep(3);
+                    sleep(3 * WAIT);
                     break;
                 case No:
                     extra_store('V', NOT_ABSORBED);
@@ -3237,6 +3281,18 @@ int post_damage(struct Character *char1, struct Character *char2, int damage) {
     return damage;
 }
 
+/* flat_damage_dealt :
+ * Arguments: char1 is the character DOING damage
+ *
+ * Purpose: Display a generic message everytime flat damage is dealt */
+void flat_damage_dealt(struct Character *char1, struct Character *char2, int damage) {
+    char message[50] = "";
+    char2->health -= damage;
+    sprintf(message, "%s took %d flat damage.", char2->name, damage);
+    center_screen(WIDTH, "%s\n", message);
+    sleep(0.5);
+}
+
 /* damage_dealt : display message of damage inflicted from char1 to char2 */
 void damage_dealt(struct Character *char1, struct Character *char2, int damage) {
     char message[50] = "";
@@ -3253,7 +3309,7 @@ void damage_dealt(struct Character *char1, struct Character *char2, int damage) 
         s_buff_char(char2, char1, NONE);
     }
     else if (char2->buff == INVULNERABLE) {
-        sprintf(message, "%s wasn't affected by the attack!", char2->name);
+        sprintf(message, "%s didn't get affected by the attack!", char2->name);
     }
     else if (char2->buff == SUMMON) {
         if (char2->rep == 'C') {
@@ -3359,7 +3415,7 @@ void damage_dealt(struct Character *char1, struct Character *char2, int damage) 
     }
     center_screen(WIDTH, "%s\n", message);
     center_screen(WIDTH, "%s\n", s_message);
-    sleep(1);
+    sleep(WAIT);
 }
 
 /* health_healed : display message of health healed to char1 by char1 */
@@ -3368,7 +3424,7 @@ void health_healed(struct Character *char1, struct Character *char2, int heal) {
     char1->health += (heal = minimum(char1->max_health - char1->health, heal));
     sprintf(message, "%s healed %d health.", char1->name, heal);
     center_screen(WIDTH, "%s\n", message);
-    sleep(1);
+    sleep(WAIT);
 }
 
 /* karma_decay : decrement the player's karma and returns the new karma value */
@@ -3486,7 +3542,7 @@ char *buff_status(struct Character *char1, struct Character *char2, int turn_no)
             sprintf(message, "%c only receives dmg from flat dmg.", char1->rep);
             break;
         case HEROIC:
-            sprintf(message, "%c's attacks steal 3 karma.", char1->rep);
+            sprintf(message, "%c's normal attacks steal 3 karma.", char1->rep);
             break;
         case FULL:
             sprintf(message, "%c has +2 atk and receives -2 dmg (post-multiplier).", char1->rep);
@@ -3532,7 +3588,7 @@ char *buff_status(struct Character *char1, struct Character *char2, int turn_no)
     }
     switch (char1->sword_buff) {
         case DEMONIC:
-            sprintf(s_message, "s:%c's normal attacks restore karma equal to the square of the number of enemies defeated divided by 5.", char1->rep);
+            sprintf(s_message, "s:%c's normal attacks restore karma equal to the number of enemies defeated divided by 2.", char1->rep);
             break;
         case TEMPORAL:
             sprintf(s_message, "s:%c gets to act twice in a row.", char1->rep);
@@ -3590,7 +3646,7 @@ char *debuff_status(struct Character *char1, struct Character *char2, int turn_n
             strcpy(message, "");
             break;
         case ACIDIFIED:
-            sprintf(message, "%c takes dmg equal to %c's atk at the start of turns.", char1->rep, char2->rep);
+            sprintf(message, "%c takes flat dmg equal to %c's atk at the start of turns.", char1->rep, char2->rep);
             if (change) {
                 char1->health -= char2->attack;
             }
@@ -3614,10 +3670,10 @@ char *debuff_status(struct Character *char1, struct Character *char2, int turn_n
             }
             break;
         case SICK:
-            sprintf(message, "%c has -3 atk (post-multiplier).", char1->rep);
+            sprintf(message, "%c has -3 non-flat dmg (post-multiplier).", char1->rep);
             break;
         case HUNGRY:
-            sprintf(message, "%c has -2 atk and receives +2 dmg (post-multiplier).", char1->rep);
+            sprintf(message, "%c has -2 non-flat dmg and receives +2 non-flat dmg (post-multiplier).", char1->rep);
             break;
         case MELTING:
             sprintf(message, "%c takes 4 flat dmg at the start of turns.", char1->rep);
@@ -3629,7 +3685,7 @@ char *debuff_status(struct Character *char1, struct Character *char2, int turn_n
             sprintf(message, "%c's next roll will always be harmful to them.", char1->rep);
             break;
         case DOUBLEOPEN:
-            sprintf(message, "%c takes x2 dmg from next direct attack.", char1->rep);
+            sprintf(message, "%c takes x2 dmg from next non-flat attack.", char1->rep);
             break;
         case SPIKES:
             sprintf(message, "%c takes 3 flat dmg if attacking.", char1->rep);
@@ -3639,7 +3695,7 @@ char *debuff_status(struct Character *char1, struct Character *char2, int turn_n
             ++turns_held;
             break;
         case ASLEEP:
-            sprintf(message, "%c can't act until directly attacked.", char1->rep);
+            sprintf(message, "%c can't act until attacked by a non-flat attack.", char1->rep);
             break;
     }
     switch (char1->sword_debuff) {
@@ -3653,7 +3709,7 @@ char *debuff_status(struct Character *char1, struct Character *char2, int turn_n
             }
             break;
         case DISABLED:
-            sprintf(s_message, "s:%c can't use sword skills and won't gain sword meter.", char1->rep);
+            sprintf(s_message, "s:%c can't use sword skills and won't charge sword meter.", char1->rep);
             break;
     }
     sprintf(final_message, "%s %s", message, s_message);
@@ -3755,7 +3811,8 @@ struct Enforcer *initialize_COP(void) {
 
     cop_ptr->alignment = 0;
     cop_ptr->sword_points = MAX_SWORD, cop_ptr->attack_cd = 0, cop_ptr->signature_cd = 0, cop_ptr->defense_cd = 0;
-    cop_attr->max_health = cop_attr->health = COP_hp;
+    cop_attr->max_health = COP_hp;
+    cop_attr->health = COP_hp;
     cop_attr->karma = COP;
     cop_attr->attack = COP_attack;
     cop_attr->name = str_dup("Algoslog");
@@ -3832,7 +3889,7 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
                 center_screen(WIDTH, "%s\n", "Nothing happens.");
             }
             center_screen(WIDTH, "%s\n", "You snatched 2 coins.");
-            sleep(1);
+            sleep(WAIT);
             update_balance(&first_item, 2);
             break;
         case FIRE:
@@ -3897,13 +3954,13 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
         case JUDGEMENT:
             printf("How much health points will you use?\n");
             set_state_vals(Controller, FALSE, FALSE, FALSE, TRUE, FALSE);
-            while ((amt = getnumber()) == _EOF) {
+            while ((amt = get_pos_int()) == _EOF) {
                 ;
             }
             center_screen(WIDTH, "%s\n", "You unleashed lightning bolts from the cosmos.");
-            user_ptr->attr->health -= amt;
-            enemy_ptr->health -= amt;
-            sleep(1);
+            flat_damage_dealt(user_ptr->attr, enemy_ptr, amt);
+            flat_damage_dealt(user_ptr->attr, user_ptr->attr, amt);
+            sleep(WAIT);
             break;
         case TEMPER:
             center_screen(WIDTH, "%s\n", "You activate the power from the cosmos onto the battlefield.");
@@ -3934,6 +3991,11 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
             damage_dealt(user_ptr->attr, enemy_ptr, user_ptr->attr->attack);
             buff_char(user_ptr->attr, enemy_ptr, HEROIC);
             break;
+        case PILLS:
+            center_screen(WIDTH, "%s\n", "You ingested the entire jar of life essence. Power surges through you!");
+            --item_used->uses;
+            buff_char(user_ptr->attr, enemy_ptr, ENLIGHTENED);
+            break;
         case BULLET:
             sprintf(item_message, "%s %s", user_ptr->attr->name, "shot a silver bullet right into their target!");
             center_screen(WIDTH, "%s\n", item_message);
@@ -3944,7 +4006,7 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
         case MILK:
             --item_used->uses;
             printf("What will you do? (0 / 1 = Buff / Debuff)\n");
-            while ((amt = getnumber()) == _EOF || (amt != 0 && amt != 1)) {
+            while ((amt = get_pos_int()) == _EOF || (amt != 0 && amt != 1)) {
                 ;
             }
             if (!amt) {
@@ -3964,7 +4026,7 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
             break;
         case UNCENSOR:
             center_screen(WIDTH, "%s\n", "You reveal their true form with Hera's Pen!");
-            enemy_ptr->health -= 5;
+            flat_damage_dealt(user_ptr->attr, enemy_ptr, 5);
             buff_char(enemy_ptr, user_ptr->attr, NONE);
             break;
         case ALCHEMY:
@@ -3998,7 +4060,7 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
                             }
                             break;
                     }
-                    sleep(1);
+                    sleep(WAIT);
                 }
             }
             break;
@@ -4019,7 +4081,7 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
     }
     if (user_ptr->attr->buff == SUMMON) {
         center_screen(WIDTH, "%s\n", "Yosef slams his fist down!");
-        enemy_ptr->health -= user_ptr->attr->ally_attack;
+        flat_damage_dealt(user_ptr->attr, enemy_ptr, user_ptr->attr->ally_attack);
     }
     if (user_ptr->attr->sword_buff == TEMPORAL) {
         s_buff_char(user_ptr->attr, enemy_ptr, TEMPORAL2);
@@ -4040,7 +4102,7 @@ void item_turn(struct item *item_used, struct Enforcer *user_ptr, struct Charact
         center_screen(WIDTH, "%s\n", "The heist has finished!");
         buff_char(user_ptr->attr, enemy_ptr, enemy_ptr->buff);
         buff_char(enemy_ptr, user_ptr->attr, NONE);
-        sleep(2);
+        sleep(2 * WAIT);
     }
     user_ptr->attack_cd = maximum(0, user_ptr->attack_cd - 1);
     user_ptr->signature_cd = maximum(0, user_ptr->signature_cd - 1);
@@ -4079,7 +4141,7 @@ void ending(int alignment) {
         fprintf(stderr, "Could not play ending wav file.\n");
     }
 
-    for (int enemy_number = 0; enemy_number < NUM_ENEMIES; enemy_number++) {
+    for (int enemy_number = 0; enemy_number < NUM_CHARACTERS; enemy_number++) {
         clrscr();
         char curr_rep = all_fates[enemy_number].rep;
         switch (curr_rep) {

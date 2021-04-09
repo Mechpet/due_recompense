@@ -1,20 +1,13 @@
 /* inventory.h
-Functions that implement the inventory system. */
+Functions that implement the inventory system. 
+*/
 
-#define MAX_LENGTH 400  // Maximum length of a description for an item in inventory
-#define MAX_SIZE 200    // Maximum length of an ASCII art of an item in inventory
 #include <string.h> 
 #include <stdlib.h>
 #include "controller.h"
 
-#define GOLEM_HP 15
-#define GOLEM_ATK 3
-
-#define GANGSTERS_HP 12
-#define GANGSTERS_ATK 3
-
-#define WHITE_KNIGHT_HP 9
-#define WHITE_KNIGHT_ATK 1
+#define MAX_LENGTH 400  // Maximum length of a description for an item in inventory
+#define MAX_SIZE 200    // Maximum length of an ASCII art of an item in inventory
 
 // Numbers that correspond to each obtainable item in the game (acts as identifiers)
 enum item_effects {
@@ -65,11 +58,11 @@ enum effect_costs {
     GOLEM_COST = 10,
 };
 
-// Numbers that describe an obtainable item's durability (how many times can the player possibly use them - is there a limit?)
+// Numbers that describe an obtainable item's durability / remaining uses (how many times can the player possibly use them)
 enum effect_uses {
     INFINITE = -1,
+    PILLS_USES = 1,
     DUE_RECOMPENSE_USES = 1,
-    PILLS_USES = 2,
     RANG_USES = 3,
     MILK_USES = 3,
     COINS_USES = 5,
@@ -77,7 +70,7 @@ enum effect_uses {
     RECOVER_USES = 10
 };
 
-// Fully describes an item in the inventory 
+// Fully describes an item in the inventory (linked list)
 struct item {
     char description[MAX_LENGTH];   // Details lore/functionality of an inventory item
     char image[MAX_SIZE];   // ASCII art of the inventory item to be displayed
@@ -85,7 +78,7 @@ struct item {
     int uses;   // The affiliated number of uses of the inventory item
     unsigned int effect;    // Identifies what the item is based on item_effects
     struct item *next_item; // Pointer to the next item in the inventory (self-referential data structure)
-} *first_item, *first_enemy_item;  // Always use the first_item as a base when using the inventory (scrolls through other items with next_item)
+} *first_item = NULL, *first_enemy_item = NULL;  // Always use the first_item as a base when using the inventory ("scrolls" through other items with next_item - linked list)
 
 /* DAMAGING = Items that primarily inflict damage */
 void chainsaw_allocate(struct item **item_ptr);
@@ -119,18 +112,22 @@ void circle_allocate(struct item **item_ptr);
 void sword_allocate(struct item **item_ptr);
 void milk_allocate(struct item **item_ptr);
 
+/* CURRENCY MANAGEMENT = One-line access to the state of coins */
 int return_balance(struct item **first_item_ptr);
 void update_balance(struct item **first_item_ptr, int balance_change);
 
+/* MEMORY / POINTER = Related to allocation, freeing, and pointer checking */
 void add_item(struct item **first_item_ptr, int item_id);
 void allocate_item(struct item **empty_item_slot, int item_id);
-struct item *has_item(struct item **first_item_ptr, int item_id);
+struct item *has_item(struct item **first_item_ptr, unsigned int item_id);
 void free_item(struct item **item_ptr);
 
-/* (item)_allocate : 
+/* In general, 
+ * (item)_allocate : 
  * Arguments: item_ptr is a pointer to pointer to item structure (pointer to pointer does not change the address the pointer to item structure points to)
- * Implementation: Dynamically allocate memory for the item structure, copy the description and art of the item, store the affiliated values, point the next_item to nothing
+ * Implementation: Dynamically allocate memory for the item structure; initialize afterward
  * Purpose: Store the item with identifier (item_effects) */
+
 void chainsaw_allocate(struct item **item_ptr) {
     if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate DAMAGE item.\n");
@@ -151,8 +148,6 @@ void chainsaw_allocate(struct item **item_ptr) {
     (*item_ptr)->effect = DAMAGE, (*item_ptr)->karma_cost = DAMAGE_COST, (*item_ptr)->uses = INFINITE, (*item_ptr)->next_item = NULL;
 }
 
-/* boots_allocate : allocates memory for an offensive-buff item in inventory 
-*/
 void boots_allocate(struct item **item_ptr) {
     if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate RUSH item.\n");
@@ -173,8 +168,6 @@ void boots_allocate(struct item **item_ptr) {
     (*item_ptr)->effect = RUSH, (*item_ptr)->karma_cost = RUSH_COST, (*item_ptr)->uses = INFINITE, (*item_ptr)->next_item = NULL;
 }
 
-/* medicine_allocate : allocates memory for a healing item in inventory
-   Intended effect   : Heals health */
 void medicine_allocate(struct item **item_ptr) {
     if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate HEAL item.\n");
@@ -195,8 +188,6 @@ void medicine_allocate(struct item **item_ptr) {
     (*item_ptr)->effect = HEAL, (*item_ptr)->karma_cost = HEAL_COST, (*item_ptr)->uses = INFINITE, (*item_ptr)->next_item = NULL;
 }
 
-/* shield_allocate : allocates memory for a defensive-buff item in inventory
-   Intended effect : Take 50 - 100 % damage depending on karma */
 void shield_allocate(struct item **item_ptr) {
     if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate GUARD item.\n");
@@ -255,27 +246,6 @@ void bag_allocate(struct item **item_ptr) {
     "| L___________J |\n"
     "|_______________|");
     (*item_ptr)->effect = TRICK, (*item_ptr)->karma_cost = TRICK_COST, (*item_ptr)->uses = INFINITE, (*item_ptr)->next_item = NULL;
-}
-
-void life_essence_allocate(struct item **item_ptr) {
-    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
-        fprintf(stderr, "FATAL: No more memory to allocate PILLS item.\n");
-    }
-    strcpy((*item_ptr)->description, "A jar full of infused life essence. While dangerous to consume, enforcers can handle the substance better than others.\nGrants a normal buff that doubles (non-flat) attacks' power and halves (non-flat) incoming damage.");
-    strcpy((*item_ptr)->image,
-    " _______________\n"
-    "|               |\n"
-    "|    _______    |\n"
-    "|   |_     _|   |\n"
-    "|  [         ]  |\n"
-    "|   \\VVVVVVV/   |\n"
-    "|   ( =(E)= )   |\n"
-    "|    |^^^^^|    |\n"
-    "|  __/##xxx\\__  |\n"
-    "| / [_______] \\ |\n"
-    "|/_____________\\|");
-    
-    (*item_ptr)->effect = PILLS, (*item_ptr)->karma_cost = FREE, (*item_ptr)->uses = PILLS_USES, (*item_ptr)->next_item = NULL;
 }
 
 void arrow_allocate(struct item **item_ptr) {
@@ -481,6 +451,27 @@ void bullet_allocate(struct item **item_ptr) {
     (*item_ptr)->effect = BULLET, (*item_ptr)->karma_cost = FREE, (*item_ptr)->uses = BULLET_USES, (*item_ptr)->next_item = NULL;
 }
 
+void life_essence_allocate(struct item **item_ptr) {
+    if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
+        fprintf(stderr, "FATAL: No more memory to allocate PILLS item.\n");
+    }
+    strcpy((*item_ptr)->description, "A jar full of infused life essence. While dangerous to consume, enforcers can handle the substance better than others.\nGrants a normal buff that doubles (non-flat) attacks' power and halves (non-flat) incoming damage.");
+    strcpy((*item_ptr)->image,
+    " _______________\n"
+    "|               |\n"
+    "|    _______    |\n"
+    "|   |_     _|   |\n"
+    "|  [         ]  |\n"
+    "|   \\VVVVVVV/   |\n"
+    "|   ( =(E)= )   |\n"
+    "|    |^^^^^|    |\n"
+    "|  __/##xxx\\__  |\n"
+    "| / [_______] \\ |\n"
+    "|/_____________\\|");
+    
+    (*item_ptr)->effect = PILLS, (*item_ptr)->karma_cost = FREE, (*item_ptr)->uses = PILLS_USES, (*item_ptr)->next_item = NULL;
+}
+
 void circle_allocate(struct item **item_ptr) {
     if ((*item_ptr = malloc(sizeof(**item_ptr))) == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate ALCHEMY item.\n");
@@ -605,15 +596,17 @@ void sword_allocate(struct item **item_ptr) {
 }
 
 /* add_item : 
- * Arguments: first_item_ptr is the pointer to pointer to first_item
+ * Arguments: first_item_ptr is the pointer to pointer to the first item in an inventory
  *            item_id is the item_effect that the new item to be allocated should have
- * Implementation: Recursion
- * Purpose: allocates memory for another item in inventory */
+ * Implementation: Recursion (linked list)
+ * Purpose: allocates memory for another item in an inventory */
 void add_item(struct item **first_item_ptr, int item_id) {
-    if (*first_item_ptr == NULL) {   // Base case: Reached an item slot in inventory that isn't occupied
+    // Base case: Reached an item slot in inventory that isn't occupied
+    if (*first_item_ptr == NULL) {   
         allocate_item(first_item_ptr, item_id);
     }
-    else {   // Recursive case: Current item slot in inventory is occupied; keep calling add_item
+    // Recursive case: Current item slot in inventory is occupied; keep calling add_item
+    else {   
         add_item(&(*first_item_ptr)->next_item, item_id);
     }
 }
@@ -697,6 +690,10 @@ void allocate_item(struct item **empty_item_ptr, int item_id) {
     }
 }
 
+/* free_item :
+ * Arguments: item_ptr is the pointer to pointer to the item slot in an inventory to be freed
+ * Implementation: free() with a pointer to pointer such that the original data is freed
+ * Purpose: Free an item in the inventory */
 void free_item(struct item **item_ptr) {
     free(*item_ptr);
     *item_ptr = NULL;
@@ -704,7 +701,12 @@ void free_item(struct item **item_ptr) {
     return;
 }
 
-struct item *has_item(struct item **first_item_ptr, int item_id) {
+/* has_item :
+ * Arguments: first_item_ptr is the pointer to pointer to the first item in an inventory
+ *            item_id is the item effect that the caller wants to check for existence in the inventory provided
+ * Implementation: Iteration of a linked-list 
+ * Purpose: Determine whether a specific inventory contains a specific item, and return the corresponding pointer to that item if existent */
+struct item *has_item(struct item **first_item_ptr, unsigned int item_id) {
     struct item *curr_item = *first_item_ptr;
     while (curr_item) {
         if (curr_item->effect == item_id) {
@@ -715,10 +717,25 @@ struct item *has_item(struct item **first_item_ptr, int item_id) {
     return NULL;
 }
 
+/* return_balance :
+ * Arguments: first_item_ptr is the pointer to pointer to the first item in an inventory
+ * Implementation: Check that the inventory contains the item with id COINS; if it does, return the number of uses of that item
+ * Purpose: Quickly access the number of uses of the item with id COINS (not a general function) */
 int return_balance(struct item **first_item_ptr) {
-    return has_item(first_item_ptr, COINS)->uses;
+    if (has_item(first_item_ptr, COINS)) {
+        return has_item(first_item_ptr, COINS)->uses;
+    }
+    return 0;
 }
 
+/* update_balance :
+ * Arguments: first_item_ptr is the pointer to pointer to the first item in an inventory
+ *            balance_change is the change in coins to be applied
+ * Implementation:  Check that the inventory contains the item with id COINS; if it does, add the change to the number of uses left
+ * Purpose: Quickly modify the number of uses of the item with id COINS (not a general function) */
 void update_balance(struct item **first_item_ptr, int balance_change) {
-    has_item(first_item_ptr, COINS)->uses += balance_change;
+    if (has_item(first_item_ptr, COINS)) {
+        has_item(first_item_ptr, COINS)->uses += balance_change;
+    }
+    return;
 }

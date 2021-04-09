@@ -20,8 +20,8 @@ Functions that primarily implement the map.
 #define MAP3Y 9
 #define MAP4Y 10
 #define MAP5Y 8
-#define MAP6Y 11
-#define MAP7Y 13
+#define MAP6Y 13
+#define MAP7Y 11
 #define LOBBY_Y 12
 #define CLIFF_Y 12
 #define JUNGLE_Y 12
@@ -75,9 +75,9 @@ struct Map {
 struct Map *initialize_map(int rows_of_tiles, int columns_of_tiles);
 struct Map *load_map(struct Map *old_map);
 void swap_enemy(struct Map *map_ptr, char rep1, char rep2);
-void free_enemy(struct Map *old_map, struct Character *enemy);
-void free_enemies(struct Map *old_map);
-void free_map(struct Map *old_map);
+void free_enemy(struct Map **old_map, char rep);
+void free_enemies(struct Map **old_map);
+void free_map(struct Map **old_map);
 void allocate_enemy(struct Map *Map_n_ptr, struct tile *tile_ptr, char *name, int hp, int max_hp, unsigned int atk, int karma_id, char representation, unsigned int sword_buff);
 struct tile *identify_tile(struct Map *curr_map, unsigned int ver, unsigned int hor);
 void set_common_symbols(struct Map *curr_map, int *indices, int num_length, char common_symbol, int set_traversable, int set_entry, int set_occupied);
@@ -107,7 +107,7 @@ void reset_prop(struct Map *map);
 int return_item_attempt(struct item *item_used, struct Enforcer *user_ptr);
 
 void shop_screen(struct Map *map_ptr);
-
+struct Map **find_map(struct Map *map_ptr);
 void trigger_battle(struct Map *map_ptr, struct Character *enemy_ptr, int turn_number);
 
 void alignment_meter(int alignment);
@@ -182,7 +182,7 @@ struct tile *decline_event(struct Map *curr_map, char enemy_rep) {
                     printf("Matilda trained you to be an expert fighter.\n");
                     center_screen(WIDTH, "%s\n", "Your attack power increased by 2.");
                     center_screen(WIDTH, "%s\n", "Your maximum health increased by 3.");
-                    sleep(3);
+                    sleep(3 * WAIT);
                     curr_map->player->attr->attack += 2;
                     curr_map->player->attr->max_health += 3;
                     curr_map->player->attr->health += 3;
@@ -225,7 +225,7 @@ void move_char(struct Map *curr_map, struct tile *next_tile) {
             if (intro(enemy_encountered, curr_map->player) == FALSE) {  // Display the enemy's intro and receives input from the user (to battle or not?)
                 trigger_battle(curr_map, enemy_encountered, 1);
                 set_state_vals(Controller, FALSE, FALSE, TRUE, FALSE, FALSE);
-                free_enemy(curr_map, enemy_encountered);    // Free memory for the enemy, possibly make space for other characters in events   
+                free_enemy(find_map(curr_map), enemy_encountered->rep);    // Free memory for the enemy, possibly make space for other characters in events   
                 if ((event_tile = trigger_battle_event(curr_map, enemy_rep))) {    // Based on the game's state, search and execute possible events that happen after a battle is won
                     next_tile = event_tile;  // If there is an event triggered && the event requires further moving of the user, next_tile will be updated && the while loop continues
                 }
@@ -237,7 +237,7 @@ void move_char(struct Map *curr_map, struct tile *next_tile) {
             else {
                 decline(enemy_encountered, curr_map->player);
                 enemy_encountered->occupied->prop.is_occupied = FALSE;
-                free_enemy(curr_map, enemy_encountered);   
+                free_enemy(find_map(curr_map), enemy_encountered->rep);   
                 if ((event_tile = decline_event(curr_map, enemy_rep))) {
                     next_tile = event_tile;
                 }
@@ -255,13 +255,55 @@ void move_char(struct Map *curr_map, struct tile *next_tile) {
     curr_map->player->attr->occupied = next_tile; 
     next_tile->prop.is_occupied = TRUE; 
     if (next_tile->symbol == 'S') {
+        unsigned int is_battle_copy = Controller->player_state.is_battle; 
+        set_state_vals(Controller, FALSE, TRUE, TRUE, FALSE, FALSE);
+        Mix_HaltChannel(-1);
         shop_screen(curr_map);
+        set_state_vals(Controller, FALSE, FALSE, TRUE, is_battle_copy, FALSE);
+        Mix_HaltChannel(-1);
     }
     if (DEBUG) {
         printf("POP move_char\n");
-        sleep(1);
+        sleep(WAIT);
     }
     return;
+}
+
+struct Map **find_map(struct Map *map_ptr) {
+    if (map_ptr == Map1) {
+        return &Map1;
+    }
+    else if (map_ptr == Map2) {
+        return &Map2;
+    }
+    else if (map_ptr == Map3) {
+        return &Map3;
+    }
+    else if (map_ptr == Map4) {
+        return &Map4;
+    }
+    else if (map_ptr == Map5) {
+        return &Map5;
+    }
+    else if (map_ptr == Map6) {
+        return &Map6;
+    }
+    else if (map_ptr == Map7) {
+        return &Map7;
+    }
+    else if (map_ptr == Lobby) {
+        return &Lobby;
+    }
+    else if (map_ptr == Jungle) {
+        return &Jungle;
+    }
+    else if (map_ptr == Cliff) {
+        return &Cliff;
+    }
+    else if (map_ptr == Map8) {
+        return &Map8;
+    }
+    return NULL;
 }
 
 /* _process_movement
@@ -308,13 +350,13 @@ int process_movement(struct Map *curr_map, int key) {
         }
         if (DEBUG) {
             printf("POP process_movement\n");
-            sleep(1);
+            sleep(WAIT);
         }
         return TRUE;
     }
     if (DEBUG) {
         printf("POP process_movement\n");
-        sleep(1);
+        sleep(WAIT);
     }
     return FALSE;
 }
@@ -330,20 +372,13 @@ struct Map *initialize_map(int rows, int columns) {
     if (empty_map->all_tiles == NULL) {
         fprintf(stderr, "FATAL: No more memory to allocate 2-D array of pointers to tiles.\n");
     }
-    printf("CP0\n");
-    sleep(1);
-    printf("Rows=%d\n", rows);
-    printf("Columns=%d\n", columns);
     for (i = 0; i < rows; ++i) {
         for (t = 0; t < columns; ++t) {
-            printf("(%d, %d)\n", t, i);
-            if ((empty_map->all_tiles[i][t] = malloc(sizeof(*empty_map->all_tiles[i][t]))) == NULL) {
+            if ((empty_map->all_tiles[i][t] = malloc(sizeof(struct tile))) == NULL) {
                 fprintf(stderr, "FATAL: No more memory to allocate tiles.\n");    // Tiles.
             }
         }
     }
-    printf("CP1\n");
-    sleep(1);
     for (i = 0; i < rows; ++i) {
         for (t = 0; t < columns; ++t) {
             if (!i) {
@@ -361,8 +396,6 @@ struct Map *initialize_map(int rows, int columns) {
             empty_map->all_tiles[i][t]->x = t, empty_map->all_tiles[i][t]->y = i; 
         }
     }
-    printf("CP2\n");
-    sleep(1);
     empty_map->enemy[0] = NULL;
     empty_map->columns = columns;
     empty_map->rows = rows;
@@ -377,9 +410,7 @@ struct Map *load_map(struct Map *old_map) {
     if (fate_returner('V') != THIRD_PARTY && old_map != Map8 && old_map != Lobby && old_map != Jungle && old_map != Cliff) {
         update_cop(COP_tracker, old_map);
     }
-    printf("Old_map = %p\n", old_map);
-    printf("%p\n%p\n%p\n%p\n%p\n", Map1, Map2, Map3, Map4, Map5);
-    sleep(3);
+    struct Map **original_map = find_map(old_map);
     if (old_map == Map1) {
         Map2 = next_map = initialize_Map2();
     }
@@ -403,13 +434,11 @@ struct Map *load_map(struct Map *old_map) {
             Lobby = next_map = initialize_lobby();
         }
         else {
-            printf("Initializing\n");
-            sleep(1);
             Map8 = next_map = initialize_Map8();
         }
     }
     else if (old_map == Lobby) {
-        if (extra_returner('\\', TRAINED) || extra_returner('\\', FOUGHT) || extra_returner('\\', DUEL) || extra_returner('\\', HALTED)) {
+        if (extra_returner('\\', WON)) {
             Map7 = next_map = initialize_Map7();
         }
         else {
@@ -420,7 +449,7 @@ struct Map *load_map(struct Map *old_map) {
         }
     }
     else if (old_map == Jungle) {
-        if (extra_returner('\\', TRAINED) || extra_returner('\\', FOUGHT) || extra_returner('\\', DUEL) || extra_returner('\\', HALTED)) {
+        if (extra_returner('\\', WON)) {
             Map7 = next_map = initialize_Map7();
         }
         else {
@@ -431,7 +460,7 @@ struct Map *load_map(struct Map *old_map) {
         }
     } 
     else if (old_map == Cliff) {
-        if (extra_returner('\\', TRAINED) || extra_returner('\\', FOUGHT) || extra_returner('\\', DUEL) || extra_returner('\\', HALTED)) {
+        if (extra_returner('\\', WON)) {
             Map7 = next_map = initialize_Map7();
         }
         else {
@@ -444,14 +473,8 @@ struct Map *load_map(struct Map *old_map) {
     else if (old_map == Map8) {
         ending(old_map->player->alignment);
     }
-    printf("Freeing enemies\n");
-    sleep(1);
-    free_enemies(old_map);
-    free_map(old_map);
-    printf("Freeing map\n");
-    sleep(1);
-    printf("Done freeing\n");
-    sleep(1);
+    free_enemies(original_map);
+    free_map(original_map);
     return next_map;
 }
 
@@ -499,7 +522,7 @@ void update_cop(struct Enforcer *cop_ptr, struct Map *old_map) {
             fate_store(old_map->enemy[0]->rep, THIRD_PARTY);
         }
         old_map->player->attr->occupied = old_map->enemy[0]->occupied;
-        free_enemy(old_map, old_map->enemy[0]);
+        free_enemy(find_map(old_map), old_map->enemy[0]->rep);
     }
     // Proceed to the entry point
     int i = 0, desired_x = 0;
@@ -584,46 +607,46 @@ void reset_prop(struct Map *map) {
  * i is an iterative variable
  * 
  * */
-void free_enemy(struct Map *curr_map, struct Character *enemy) {
+void free_enemy(struct Map **curr_map, char enemy_rep) {
     int i, t;
-    enemy->occupied->prop.is_occupied = FALSE;
-    for (i = 0; i < MAX_ENEMIES && curr_map->enemy[i]; ++i) { /* free current map's enemies */
-        if (curr_map->enemy[i] == enemy) {
-            free(curr_map->enemy[i]->name);
-            curr_map->enemy[i]->name = NULL;
-            free(curr_map->enemy[i]);
-            curr_map->enemy[i] = NULL;
-            for (t = i + 1; curr_map->enemy[t] && t < MAX_ENEMIES; ++t) { // Left shift all enemies after the enemy that free called
-                curr_map->enemy[t - 1] = curr_map->enemy[t];
+    for (i = 0; i < MAX_ENEMIES && (*curr_map)->enemy[i]; ++i) { /* free current map's enemies */
+if ((*curr_map)->enemy[i]->rep == enemy_rep) {
+            (*curr_map)->enemy[i]->occupied = NULL;
+            free((*curr_map)->enemy[i]->name);
+            (*curr_map)->enemy[i]->name = NULL;
+            free((*curr_map)->enemy[i]);
+            (*curr_map)->enemy[i] = NULL;
+            for (t = i + 1; (*curr_map)->enemy[t] && t < MAX_ENEMIES; ++t) { // Left shift all enemies after the enemy that free called
+                (*curr_map)->enemy[t - 1] = (*curr_map)->enemy[t];
             }
-            curr_map->enemy[t - 1] = NULL;
+            (*curr_map)->enemy[t - 1] = NULL;
         }
     }
     return;
 }
 
-void free_enemies(struct Map *curr_map) {
-    for (int i = 0; i < MAX_ENEMIES && curr_map->enemy[i] != NULL; i++) {
-        free(curr_map->enemy[i]->name);
-        curr_map->enemy[i]->name = NULL;
-        free(curr_map->enemy[i]);
-        curr_map->enemy[i] = NULL;  
+void free_enemies(struct Map **curr_map) {
+    for (int i = 0; i < MAX_ENEMIES && (*curr_map)->enemy[i] != NULL; i++) {
+        free((*curr_map)->enemy[i]->name);
+        (*curr_map)->enemy[i]->name = NULL;
+        free((*curr_map)->enemy[i]);
+        (*curr_map)->enemy[i] = NULL;  
     }
 
     return;
 }
 
-void free_map(struct Map *old_map) {
-    for (int i = 0; i < old_map->rows; ++i) {
-        for (int t = 0; t < old_map->columns; ++t) {
-            free(old_map->all_tiles[i][t]); // Free each tile that was dynamically allocated
-            old_map->all_tiles[i][t] = NULL;
+void free_map(struct Map **old_map) {
+    for (int i = 0; i < (*old_map)->rows; ++i) {
+        for (int t = 0; t < (*old_map)->columns; ++t) {
+            free((*old_map)->all_tiles[i][t]); // Free each tile that was dynamically allocated
+            (*old_map)->all_tiles[i][t] = NULL;
         }
     }
-    free(old_map->all_tiles);   // Free the array of tiles
-    old_map->all_tiles = NULL;
-    free(old_map);  // Free the memory used to allocate the Map structure
-    old_map = NULL;
+    free((*old_map)->all_tiles);   // Free the array of tiles
+    (*old_map)->all_tiles = NULL;
+    free((*old_map));  // Free the memory used to allocate the Map structure
+    (*old_map) = NULL;
 
     return;
 }
@@ -665,17 +688,6 @@ struct Map *initialize_jungle(void) {
     if (fate_returner('#') != CONVICTED) {
         allocate_enemy(empty_map, empty_map->all_tiles[FERAL_y][FERAL_x], "Chike", FERAL_hp, FERAL_hp, FERAL_attack, FERAL, '#', DRAIN);
     }
-    /*for (i = 2; i < 7; i += 4) {
-        for (t = 1; t < 11; t += 3) {
-            empty_map->all_tiles[i][t]->symbol = '{';
-            set_prop_vals(empty_map->all_tiles[i][t], FALSE, FALSE, FALSE);
-            empty_map->all_tiles[i][t + 1]->symbol = '}';
-            set_prop_vals(empty_map->all_tiles[i][t + 1], FALSE, FALSE, FALSE);
-        }
-    } */
-    // index = i * MAX_COLUMNS + t 
-    // { : 27, 30, 33, 36, 79, 82, 85, 88, 55, 58, 61, 106, 109, 112, 46, 66, 101, 124, 115
-    // } : 28, 31, 34, 37, 80, 83, 86, 89, 56, 59, 62, 107, 110, 113, 47, 67, 102, 125, 53
     int *common_tiles = NULL;
     if ((common_tiles = malloc(19 * sizeof(common_tiles))) == NULL) {
         fprintf(stderr, "FATAL: No memory for common tile symbols.\n");
@@ -689,38 +701,6 @@ struct Map *initialize_jungle(void) {
     common_tiles[18] = 53;
     set_common_symbols(empty_map, common_tiles, 19, '}', FALSE, FALSE, FALSE);
     
-    /*for (i = 4, t = 3; t < 10; t += 3) {
-        empty_map->all_tiles[i][t]->symbol = '{';
-        set_prop_vals(empty_map->all_tiles[i][t], FALSE, FALSE, FALSE);
-        empty_map->all_tiles[i][t + 1]->symbol = '}';
-        set_prop_vals(empty_map->all_tiles[i][t + 1], FALSE, FALSE, FALSE);
-    }
-    empty_map->all_tiles[4][1]->symbol = '}';
-    set_prop_vals(empty_map->all_tiles[4][1], FALSE, FALSE, FALSE);
-    for (i = 8, t = 2; t < 9; t += 3) {
-        empty_map->all_tiles[i][t]->symbol = '{';
-        set_prop_vals(empty_map->all_tiles[i][t], FALSE, FALSE, FALSE);
-        empty_map->all_tiles[i][t + 1]->symbol = '}';
-        set_prop_vals(empty_map->all_tiles[i][t + 1], FALSE, FALSE, FALSE);
-    }
-    empty_map->all_tiles[8][11]->symbol = '{';
-    set_prop_vals(empty_map->all_tiles[8][11], FALSE, FALSE, FALSE);
-    empty_map->all_tiles[3][7]->symbol = '{';
-    set_prop_vals(empty_map->all_tiles[3][7], FALSE, FALSE, FALSE);
-    empty_map->all_tiles[3][8]->symbol = '}';
-    set_prop_vals(empty_map->all_tiles[3][8], FALSE, FALSE, FALSE);
-    empty_map->all_tiles[5][1]->symbol = '{';
-    set_prop_vals(empty_map->all_tiles[5][1], FALSE, FALSE, FALSE);
-    empty_map->all_tiles[5][2]->symbol = '}';
-    set_prop_vals(empty_map->all_tiles[5][2], FALSE, FALSE, FALSE);
-    empty_map->all_tiles[7][10]->symbol = '{';
-    set_prop_vals(empty_map->all_tiles[7][10], FALSE, FALSE, FALSE);
-    empty_map->all_tiles[7][11]->symbol = '}';
-    set_prop_vals(empty_map->all_tiles[7][11], FALSE, FALSE, FALSE);
-    empty_map->all_tiles[9][7]->symbol = '{';
-    set_prop_vals(empty_map->all_tiles[9][7], FALSE, FALSE, FALSE);
-    empty_map->all_tiles[9][8]->symbol = '}';
-    set_prop_vals(empty_map->all_tiles[9][8], FALSE, FALSE, FALSE);*/
     return empty_map;
 }
 
@@ -838,11 +818,7 @@ struct Map *initialize_Map7(void) {
 struct Map *initialize_Map6(void) {
     int i, t;
     struct Map *empty_map = NULL;
-    printf("Entered initialize_Map6\n");
-    sleep(3);
     empty_map = initialize_map(MAP6Y, MAX_COLUMNS);
-    printf("Done initializing initial map\n");
-    sleep(3);
     for (i = 3; i < 6; ++i) {
         empty_map->all_tiles[i][3]->symbol = '|';
         set_prop_vals(empty_map->all_tiles[i][3], FALSE, FALSE, FALSE);
@@ -866,8 +842,7 @@ struct Map *initialize_Map6(void) {
     empty_map->all_tiles[3][7]->symbol = ']';
     empty_map->all_tiles[4][7]->symbol = ']';
     allocate_enemy(empty_map, empty_map->all_tiles[5][4], "Grischa", BAT_hp, BAT_hp, BAT_attack, BAT, '@', RANG);
-    printf("Done allocating...\n");
-    sleep(2);
+
     return empty_map;
 }
 
@@ -1002,7 +977,7 @@ struct Map *find_next_map(struct Map *curr_map) {
     }
     if (DEBUG) {
         printf("POP find_next_map\n");
-        sleep(1);
+        sleep(WAIT);
     }
     return curr_map; 
 }
@@ -1127,7 +1102,7 @@ void trigger_battle(struct Map *map_ptr, struct Character *enemy_ptr, int turn_n
         fate_store('^', CONVICTED);
         int final_alignment = map_ptr->player->alignment;
         if (enemy_ptr->rep == 'X') {
-            free_enemy(map_ptr, enemy_ptr);
+            free_enemy(find_map(map_ptr), enemy_ptr->rep);
         }
         else {
             finalize_cop(COP_tracker, map_ptr);
@@ -1142,12 +1117,12 @@ void trigger_battle(struct Map *map_ptr, struct Character *enemy_ptr, int turn_n
         identify_tile(map_ptr, enemy_ptr->occupied->y, enemy_ptr->occupied->x)->prop.is_occupied = FALSE;
         map_ptr->player->attr->buff = NONE, map_ptr->player->attr->debuff = NONE, map_ptr->player->attr->sword_buff = NONE, map_ptr->player->attr->sword_debuff = NONE;
         if (enemy_ptr->rep == 'X') {
-            free_enemy(map_ptr, enemy_ptr);
+            free_enemy(find_map(map_ptr), enemy_ptr->rep);
             ending(map_ptr->player->alignment);
         }
         if (DEBUG) {
             printf("POP trigger_battle\n");
-            sleep(1);
+            sleep(WAIT);
         }
         return;
     }
@@ -1180,7 +1155,7 @@ void trigger_battle(struct Map *map_ptr, struct Character *enemy_ptr, int turn_n
                     increment_sword(map_ptr->player);
                 }
                 if (map_ptr->player->attr->sword_buff == DEMONIC) {
-                    map_ptr->player->attr->karma += (pow(2, total_fate(CONVICTED)) / 5);
+                    map_ptr->player->attr->karma += (total_fate(CONVICTED) / 2);
                 }
                 break;
             case Inventory:
@@ -1219,7 +1194,7 @@ void trigger_battle(struct Map *map_ptr, struct Character *enemy_ptr, int turn_n
             case Sword:
                 if (map_ptr->player->sword_points != MAX_SWORD || map_ptr->player->attr->sword_debuff == DISABLED) {
                     center_screen(WIDTH, "%s\n", "Sword is not charged.");
-                    sleep(1);
+                    sleep(WAIT);
                     free(player_buff);
                     player_buff = NULL;
                     free(player_debuff);
@@ -1251,7 +1226,7 @@ void trigger_battle(struct Map *map_ptr, struct Character *enemy_ptr, int turn_n
                             if (map_ptr->player->alignment < MAX_ALIGNMENT / 3) {
                                 play_sound_fx("Music\\Sword.wav");
                                 center_screen(WIDTH, "%s\n", "You ravage your enemy.");
-                                enemy_ptr->health -= total_fate(CONVICTED);
+                                flat_damage_dealt(map_ptr->player->attr, enemy_ptr, total_fate(CONVICTED));
                                 if (enemy_ptr->health <= 0) {
                                     center_screen(WIDTH, "%s\n", "You celebrate your victory.");
                                     health_healed(map_ptr->player->attr, enemy_ptr, map_ptr->player->attr->max_health / 10);
@@ -1259,11 +1234,12 @@ void trigger_battle(struct Map *map_ptr, struct Character *enemy_ptr, int turn_n
                             }
                             else if (map_ptr->player->alignment < 2 * (MAX_ALIGNMENT / 3)) {
                                 center_screen(WIDTH, "%s\n", "You dealt out your special move.");
-                                enemy_ptr->health -= -1 * 3 * abs(map_ptr->player->alignment - 7) + 9;
+                                flat_damage_dealt(map_ptr->player->attr, enemy_ptr, -1 * 3 * abs(map_ptr->player->alignment - 7) + 9);
                             }
                             else {
                                 center_screen(WIDTH, "%s\n", "You smite your opponent.");
-                                enemy_ptr->health -= 2 * total_fate(SPARED);
+                                flat_damage_dealt(map_ptr->player->attr, enemy_ptr, 2 * total_fate(SPARED));
+                                //enemy_ptr->health -= 2 * total_fate(SPARED);
                             }
                             break;
                         case SIGNATURE_ID:
@@ -1274,7 +1250,7 @@ void trigger_battle(struct Map *map_ptr, struct Character *enemy_ptr, int turn_n
                             }
                             else if (map_ptr->player->alignment < 2 * (MAX_ALIGNMENT / 3)) {
                                 center_screen(WIDTH, "%s\n", "You bend the temporal laws.");
-                                sleep(1);
+                                sleep(WAIT);
                                 s_buff_char(map_ptr->player->attr, enemy_ptr, TEMPORAL);
                                 free(player_buff);
                                 player_buff = NULL;
@@ -1290,7 +1266,7 @@ void trigger_battle(struct Map *map_ptr, struct Character *enemy_ptr, int turn_n
                             else {
                                 center_screen(WIDTH, "%s\n", "You receive a holy blessing from somewhere.");
                                 health_healed(map_ptr->player->attr, enemy_ptr, pow(total_fate(SPARED), 2));
-                                map_ptr->player->attr->karma += pow(total_fate(SPARED), 2) / 2;
+                                map_ptr->player->attr->karma += 2 * total_fate(SPARED);
                             }
                             break;
                         case DEFENSE_ID:
@@ -1309,14 +1285,14 @@ void trigger_battle(struct Map *map_ptr, struct Character *enemy_ptr, int turn_n
                             }
                             break;
                     }
-                    sleep(1);
+                    sleep(WAIT);
                 }
                 break;
         }
         if (keystr == Select || keystr == Sword || map_ptr->player->attr->debuff == RESTRAINED || map_ptr->player->attr->debuff == ASLEEP) {
             if (map_ptr->player->attr->buff == SUMMON) {
                 center_screen(WIDTH, "%s\n", "Yosef slams his fist down!");
-                enemy_ptr->health -= map_ptr->player->attr->ally_attack;
+                flat_damage_dealt(map_ptr->player->attr, enemy_ptr, map_ptr->player->attr->ally_attack);
             }
             if (map_ptr->player->attr->sword_buff == TEMPORAL) {
                 s_buff_char(map_ptr->player->attr, enemy_ptr, TEMPORAL2);
@@ -1377,11 +1353,11 @@ struct item *inventory_screen(struct item *first_item_slot, struct Enforcer *use
                         break;
                     case CONSUMED:
                         center_screen(WIDTH, "%s\n", "No more item uses.");
-                        sleep(1);
+                        sleep(WAIT);
                         break;
                     case UNAFFORDABLE:
                         center_screen(WIDTH, "%s\n", "Not enough karma.");
-                        sleep(1);
+                        sleep(WAIT);
                         break;
                 }
                 break;
@@ -1442,9 +1418,9 @@ int sword_screen(struct Map *map_ptr, struct Character *enemy_ptr, int turn_no) 
     char z_m[] = "(Peacekeeper's Strike) Deal flat damage equal to with closeness of affinity to the middle (3, 6, 9, 6, 3)";
     char z_r[] = "(Smite) Deal flat damage equal to twice the number of opponents talked to that were not battled";
 
-    char x_l[] = "(Demonic Infusion) Normal attacks restore karma equal to the square of the number of enemies defeated divided by 5";
+    char x_l[] = "(Demonic Infusion) Normal attacks restore karma equal to the number of enemies defeated divided by 2";
     char x_m[] = "(Temporal Tear) Gain two consecutive turns before your enemy where items cost no karma";
-    char x_r[] = "(Holy Blessing) Restore health equal to the square of number of opponents talked to that were not battled and\nrestore karma equal to the square of the number of opponents talked to that were not battled divided by 2";
+    char x_r[] = "(Holy Blessing) Restore health equal to the square of number of opponents talked to that were not battled and\nrestore karma equal to double the number of opponents talked to that were not battled";
 
     char c_l[] = "(Retaliate) Reduce non-flat damage taken by 50% on the next non-flat hit and automatically deal back the damage received";
     char c_m[] = "(Block) Reduce non-flat damage taken by 100% on the next non-flat hit";
@@ -1458,7 +1434,7 @@ int sword_screen(struct Map *map_ptr, struct Character *enemy_ptr, int turn_no) 
                 }
                 else {
                     center_screen(WIDTH, "%s\n", "On cooldown.");
-                    sleep(1);
+                    sleep(WAIT);
                 }
                 break;
             case Signature:
@@ -1467,7 +1443,7 @@ int sword_screen(struct Map *map_ptr, struct Character *enemy_ptr, int turn_no) 
                 }
                 else {
                     center_screen(WIDTH, "%s\n", "On cooldown.");
-                    sleep(1);
+                    sleep(WAIT);
                 }
                 break;
             case Defense:
@@ -1476,7 +1452,7 @@ int sword_screen(struct Map *map_ptr, struct Character *enemy_ptr, int turn_no) 
                 }
                 else {
                     center_screen(WIDTH, "%s\n", "On cooldown.");
-                    sleep(1);
+                    sleep(WAIT);
                 }
                 break;
             case Sword:
@@ -1569,7 +1545,7 @@ void shop_screen(struct Map *map_ptr) {
         if (keystr >= '0' && keystr <= '2') {
             if (return_balance(&first_item) < costs[3 * map_offset + keystr - '0']) {
                 printf("Too poor for that.\n");
-                sleep(2);
+                sleep(2 * WAIT);
                 shop_screen(map_ptr);
                 return;
             }
@@ -1610,7 +1586,7 @@ void shop_screen(struct Map *map_ptr) {
                 break;
             default:
                 printf("(Invalid entry...)\n");
-                sleep(2);
+                sleep(2 * WAIT);
                 break;
         }
         shop_screen(map_ptr);

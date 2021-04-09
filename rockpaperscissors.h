@@ -1,3 +1,7 @@
+/* rockpaperscissors.h
+Contains all the functions needed for a rock-paper-scissors game with a computer player 
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,31 +12,50 @@ int choose_rps(void);
 int choose_rps_random(void);
 int shoot(void);
 
+enum choice {
+    ROCK,
+    PAPER,
+    SCISSORS
+};
+
+/* choose_rps
+ * Arguments:
+ * Implementation: While loop is terminated when a condition is met 
+ * Purpose: Returns a way to identify the of choice of rock, paper, or scissors the player decides */
 int choose_rps(void) {
     int c;
+    printf("What will you play?:\nr = rock, p = paper, s = scissors\n");
     while (c != EOF && c != 'r' && c != 'R' && c != 'p' && c != 'P' && c != 's' && c != 'S') {
-        printf("What will you play?:\nr = rock, p = paper, s = scissors\n>");
+        printf(">");
         c = getchar();
         flush_input();
     }
     switch (tolower(c)) {
         case 'r':
-            return 0;
+            return ROCK;
             break;
         case 'p':
-            return 1;
+            return PAPER;
             break;
         case 's':
-            return 2;
+            return SCISSORS;
             break;
     }
     return 0;
 }
 
+/* choose_rps_random :
+ * Arguments:
+ * Implementation: Random number generator
+ * Purpose: Return a random integer in the range [0, 2] */
 int choose_rps_random(void) {
     return (rand() % 3);
 }
 
+/* shoot :
+ * Arguments:
+ * Implementation: Call all helper functions to play the game
+ * Purpose: Play a single round of rock-paper-scissors */
 int shoot(void) {
     char rock_a[7][25] = {
         "                    ",
@@ -93,27 +116,27 @@ int shoot(void) {
         {rock_a, paper_a, scissors_a},
         {rock_b, paper_b, scissors_b},
     };
-    int player_choice = choose_rps(), opponent_choice = choose_rps_random(), i;
+    int i, player_choice = choose_rps(), opponent_choice = choose_rps_random();
     for (i = 0; i < 7; ++i)
         printf("%s%s", rock_a[i], rock_b[i]);
-    sleep(1);
+    sleep(WAIT);
     for (i = 0; i < 7; ++i)
         printf("%s%s", paper_a[i], paper_b[i]);
-    sleep(1);
+    sleep(WAIT);
     for (i = 0; i < 7; ++i)
         printf("%s%s", scissors_a[i], scissors_b[i]);
-    sleep(1);
+    sleep(WAIT);
     printf("%22s\n", "SHOOT!");
-    sleep(1);
+    sleep(WAIT);
     for (i = 0; i < 7; ++i)
         printf("%s%s", artworks[0][player_choice][i], artworks[1][opponent_choice][i]);
     if (player_choice == opponent_choice) {
         printf("Draw.\n");
         return 0;
     }
-    else if ((player_choice == 0 && opponent_choice == 1) ||
-             (player_choice == 1 && opponent_choice == 2) ||
-             (player_choice == 2 && opponent_choice == 0)) {
+    else if ((player_choice == ROCK && opponent_choice == PAPER) ||
+             (player_choice == PAPER && opponent_choice == SCISSORS) ||
+             (player_choice == SCISSORS && opponent_choice == ROCK)) {
         printf("Your opponent wins.\n");
         return 2;
     }
